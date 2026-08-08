@@ -1,102 +1,126 @@
-# cv-onepage
+# CV maker
 
-A CV as one HTML file, rendered to a **single-page PDF** — no pagination, no page
-breaks cutting a job in half, text stays selectable and vector.
+Make a good-looking CV as a **single-page PDF** — one continuous page, so no job
+gets cut in half by a page break.
 
-No LaTeX, no npm, no build step. You need Chrome and bash.
+You don't need to know how to code. You need Chrome and about ten minutes.
+
+<img src="preview.png" alt="A two-column CV: name and photo at the top, contact
+details and skills down the left, work history on the right." width="420">
+
+## What you get
+
+- **One page, however long your CV is.** No awkward breaks, no half a job at the
+  bottom of page 1.
+- **Real text, not a picture.** Recruiters' systems can read it, and so can
+  search. You can select and copy from it.
+- **Sharp at any zoom, and tiny.** Usually around 130 KB.
+- **Yours.** No account, no subscription, no watermark, no site that locks the
+  download behind a paywall.
+
+## Before you start
+
+You need **Google Chrome** installed. That's it. (Chromium and Edge also work.)
+
+On Windows, run the commands below in Git Bash or WSL.
+
+## Making your CV
+
+**1. Download this project.** Green *Code* button above → *Download ZIP* →
+unzip it. Open a terminal in that folder.
+
+**2. Write your content.** Open `content-example.txt` in any text editor. It's a
+fill-in-the-blanks CV — name, contact, skills, jobs. Replace the placeholder
+text with your own and save it.
+
+**3. Turn it into a CV.** Two ways:
+
+> **The easy way.** Open ChatGPT or Claude. Attach your filled-in text file and
+> `template.html`, and ask:
+>
+> *"Build my CV from this text using this template. Keep the template's layout
+> and styling, only replace the content. Give me back the complete HTML file."*
+>
+> Save what it gives you as `cv.html` in this folder.
+
+> **By hand.** Copy `template.html` to `cv.html` and type your details over the
+> placeholder text. It's ordinary HTML — if you can edit a web page, you can
+> edit this. The example content shows you what goes where.
+
+**4. Render it.**
 
 ```bash
-cp template.html cv.html   # then edit cv.html
-./render.sh                # -> out/cv.pdf
+./render.sh
 ```
 
-## The trick
+Your PDF appears in the `out` folder. Done.
 
-A CV is a continuous document, but PDF wants fixed pages. Most tools solve this
-by paginating and hoping the breaks land somewhere sensible. This does the
-opposite: it makes the page as tall as the content.
+Changed something? Run `./render.sh` again. It takes a second.
 
-Chrome decides where to break using the `@page` size, and that size has to be
-declared in CSS before printing. So the page measures itself first:
+## Your photo
 
-```js
-const mm = document.documentElement.scrollHeight / 96 * 25.4 + 1;
-const style = document.createElement("style");
-style.textContent = "@page { size: 210mm " + mm.toFixed(2) + "mm; margin: 0; }";
-document.head.appendChild(style);
+Replace `photo.jpg` with your own, keeping the same filename. Square works best
+— 400×400 pixels or larger. A smaller one will look soft when printed.
+
+Don't want a photo? Delete this line from your `cv.html`:
+
+```html
+<img class="photo" src="photo.jpg" alt="">
 ```
 
-`scrollHeight` is in CSS pixels, which are 1/96 inch, so dividing by 96 and
-multiplying by 25.4 converts to millimetres. Chrome runs this on load, then
-prints against the stylesheet it just received. Result: width stays A4, height
-is whatever the CV needs, page count is always 1.
+## Several versions of your CV
 
-The `+ 1` millimetre absorbs sub-pixel rounding. Without it the last fraction of
-a line spills onto a second page.
+Applying for different kinds of roles usually means different CVs. Just make
+more files — `cv.html`, `cv-manager.html`, `cv-czech.html` — and run
+`./render.sh` once. It renders all of them.
 
-## Trade-offs
+Your own files never end up in this project's history if you publish it
+somewhere; they're excluded automatically.
 
-The output is A4-wide but as tall as it needs to be — around 700 mm for a dense
-two-page CV. That is deliberate, and it costs you something:
+## Two things to know before you send it
 
-- **It will not print on A4.** A printer scales it down or splits it.
-- **Some job portals validate page dimensions** and may reject an unusual size.
-  The text itself is real vector text, so ATS parsing is unaffected.
+**It won't print nicely on A4.** The page is as tall as your CV, so a printer
+either shrinks it or splits it across sheets. For sending by email or uploading,
+that's fine. For handing someone a printed copy, see below.
 
-If you need a conventional multi-page A4 file, delete the `<script>` block at
-the bottom of your `cv.html` and add `@page { size: A4; margin: 15mm; }`. Chrome
-then paginates normally.
+**A few job portals check page size** and may complain about an unusual one.
+Rare, but if a site rejects the file, that's the reason.
 
-## Files
+Need an ordinary multi-page A4 file instead? Open your `cv.html`, delete the
+`<script>` block at the very bottom, and add this line just above `</style>`:
 
-| File | What it does |
+```css
+@page { size: A4; margin: 15mm; }
+```
+
+Render again and you'll get a normal paginated PDF.
+
+## If something goes wrong
+
+| What you see | What to do |
 |---|---|
-| `template.html` | The layout. Copy it to `cv.html` and write your own content. |
-| `content-example.txt` | Plain-text skeleton of a CV. Fill it in, hand it plus the template to an LLM, get `cv.html` back. |
-| `render.sh` | Renders every `cv*.html` in the folder to `out/`. |
-| `stitch_cv.py` | Unrelated bonus — see below. |
-| `photo.jpg` | Placeholder portrait. Replace with your own, ideally 400×400 or larger. |
+| `No Chrome/Chromium found` | Install Google Chrome, or run `CHROME=/path/to/chrome ./render.sh` |
+| `No cv*.html found` | You skipped step 3 — there's no `cv.html` in the folder yet |
+| `WARNING: expected a single page` | Rare. Tell us in an issue and include your `cv.html` |
+| `permission denied` running the script | Run `chmod +x render.sh` once |
+| Photo looks blurry | Use a bigger image — 400×400 or more |
+| Your text isn't showing up | You edited `template.html` instead of `cv.html` |
 
-Keeping several variants is the point: `cv.html`, `cv-backend.html`,
-`cv-cz.html` all render in one go. `.gitignore` excludes `cv*.html` and `out/`
-so your own CV never lands in a public repo by accident.
+## Only have screenshots of an old CV?
 
-## Editing
-
-The layout is a two-column flexbox with a hairline divider. Content classes:
-
-- `.job` — one role. `h3` is the title, `.when` the dates, `.intro` an optional
-  lead paragraph.
-- `.group` — a labelled group of bullets inside a role. Optional.
-- `.entry-title` / `.entry-meta` — sidebar entries with a date underneath.
-- `<strong>` — inline emphasis for numbers and results.
-
-The visual hierarchy relies on the gap above a job title (21px) being clearly
-larger than the gap above a group label (12px). If you change one, change both,
-or roles start to blur into the bullets above them.
-
-Fonts are system-only (Avenir Next, then Helvetica Neue). Nothing is fetched at
-render time, so output is byte-stable and works offline.
-
-## stitch_cv.py
-
-A separate tool for a separate problem: you have a CV rendered somewhere you
-cannot export from, and only screenshots of it.
+If your CV is stuck in a tool you can't export from, `stitch_cv.py` joins
+scrolling screenshots back into one PDF:
 
 ```bash
 python3 stitch_cv.py out.pdf top.png middle.png bottom.png
 ```
 
-It joins vertically overlapping screenshots into one tall image and writes it as
-a single-page PDF. Overlap is detected by matching whole pixel rows — screenshots
-of the same scrolled page render identically, so rows that repeat mark the seam.
-Rows appearing more than four times are ignored, since borders and separator
-lines repeat down the whole page and would otherwise vote for every alignment at
-once.
+Give it the screenshots top to bottom; overlap between them is fine and gets
+removed automatically. Needs Pillow (`pip install pillow`).
 
-Needs Pillow (`pip install pillow`). The output is a raster image in a PDF, so
-prefer writing the HTML if you have the option.
+This gives you a picture of a CV, not real text — recruiters' systems can't read
+it. Use it to recover old content, then write it properly using the steps above.
 
 ## Licence
 
-MIT
+MIT — use it, change it, share it.

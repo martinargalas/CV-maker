@@ -1,0 +1,8 @@
+.git
+out/
+cv*.html
+*.pdf
+preview.png
+__pycache__/
+*.pyc
+.DS_Store

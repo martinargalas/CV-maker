@@ -96,10 +96,10 @@ function notice(message) {
   noticeEl.hidden = !message;
 }
 
-async function postJSON(url, body) {
+async function postJSON(url, body, method = "POST") {
   const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method,
+    headers: { "Content-Type": "application/json", "X-CV-Client": "1" },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -458,7 +458,9 @@ document.querySelector(".bar-actions").addEventListener("click", async (event) =
   if (!button) return;
   const { action } = button.dataset;
 
-  if (action === "import") {
+  if (action === "save") {
+    await save();
+  } else if (action === "import") {
     $("#json-input").click();
   } else if (action === "import-text") {
     const panel = $("#text-import");
@@ -489,9 +491,61 @@ document.querySelector(".bar-actions").addEventListener("click", async (event) =
 
 window.addEventListener("resize", fitPreview);
 
-/* Start on the example, so the first thing anyone sees is a filled-in CV
-   rather than an empty sheet. */
+/* ------------------------------------------------------------- saving */
+
+let savedId = new URLSearchParams(location.search).get("id");
+let signedIn = false;
+
+async function save() {
+  const button = $("#save-button");
+  const title = $("#cv-title").value.trim();
+  button.disabled = true;
+  try {
+    if (savedId) {
+      await postJSON(`/api/cvs/${savedId}`, { title, cv: state }, "PUT");
+    } else {
+      const response = await postJSON("/api/cvs", { title, cv: state });
+      savedId = (await response.json()).id;
+      // Keep the address in step, so a reload or a bookmark opens this CV
+      // rather than starting a new one.
+      history.replaceState(null, "", `/edit?id=${encodeURIComponent(savedId)}`);
+    }
+    notice("");
+    button.textContent = "Saved";
+    setTimeout(() => { button.textContent = "Save"; }, 1500);
+  } catch (error) {
+    notice(`Could not save — ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/* Start with whatever this page is for: a saved CV, or the example, so the
+   first thing anyone sees is a filled-in CV rather than an empty sheet. */
 (async () => {
+  try {
+    const me = await (await fetch("/api/me")).json();
+    signedIn = Boolean(me.signed_in);
+    $("#save-button").hidden = !signedIn;
+  } catch (_) {}
+
+  if (savedId && signedIn) {
+    try {
+      const response = await fetch(`/api/cvs/${savedId}`);
+      if (!response.ok) throw new Error((await response.json()).error || "not found");
+      const saved = await response.json();
+      state = normalize(saved.cv);
+      $("#cv-title").value = saved.title;
+      draw();
+      refreshPreview();
+      return;
+    } catch (error) {
+      savedId = null;
+      history.replaceState(null, "", "/edit");
+      notice(`Could not open that CV — ${error.message}`);
+    }
+  }
+
   try {
     const response = await fetch("/static/example.json");
     state = normalize(await response.json());

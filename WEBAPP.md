@@ -7,6 +7,20 @@ terminal can use it.
 file is kept as the brief it was written as, so the decisions below can be
 checked against what was actually built.
 
+Three things were then asked for that this brief rules out. README.md is the
+accurate description; where the two disagree, believe the README.
+
+- **Accounts and saved CVs exist.** The brief put them out of scope and said
+  nothing is stored on the server. There is now a landing page of saved CVs,
+  which needs somewhere to save them and somebody to own them.
+- **The plain-text format can be imported.** The brief left it to the CLI.
+- **The compose file is at the repository root**, not in `web/`, because that
+  is where deployment tools look for it.
+
+What did not change: the form never shows anybody HTML, the template is still
+shared with the CLI rather than forked, and the security rules below still hold
+line for line.
+
 ## What it does
 
 One page. You fill in your CV, you press a button, a PDF downloads. No account,

@@ -34,6 +34,13 @@ services:
       # Set to 1 only when a reverse proxy in front sets X-Forwarded-For, or
       # rate limiting can be defeated by forging the header.
       TRUST_PROXY: "0"
+      # Let people create their own account. The first account made becomes the
+      # administrator, who can turn this off from the admin page once everyone
+      # who needs one has one.
+      ALLOW_SIGNUP: "1"
+      # Optional shared secret required to create an account. Leave empty on a
+      # home network; set it if this is reachable from anywhere else.
+      SIGNUP_CODE: ""
 
     # Chromium runs without its own sandbox, so the container is the boundary
     # instead: nothing gains privileges, no capabilities, and the only writable
@@ -45,6 +52,11 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:size=512m,mode=1777
+
+    # Accounts and saved CVs. This is the one thing here worth backing up, and
+    # the one thing that is lost if the volume is removed with the stack.
+    volumes:
+      - cv-data:/data
 
     # A browser process is expensive; keep one bad day from taking the host.
     mem_limit: 1g
@@ -58,3 +70,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+volumes:
+  cv-data:

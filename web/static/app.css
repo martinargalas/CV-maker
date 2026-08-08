@@ -11,6 +11,11 @@
 
 * { box-sizing: border-box; }
 
+/* An author rule like `label { display: block }` outranks the browser's own
+   rule for [hidden], so hiding an element by attribute silently stops working.
+   Put it back, above everything. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -72,6 +77,155 @@ button.tiny {
 }
 
 button.remove:hover { color: var(--danger); border-color: var(--danger); }
+
+a.button {
+  display: inline-block;
+  text-decoration: none;
+  font: inherit;
+  padding: 7px 13px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--body);
+}
+
+a.button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.home-link {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.title-field {
+  flex: 1 1 200px;
+  max-width: 320px;
+  font-size: 13px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.who { font-size: 13px; color: var(--muted); align-self: center; }
+
+.notice.good { background: #eaf5ec; color: #2b6b3a; border-bottom-color: #cfe6d5; }
+
+/* ------------------------------------------------------- home and admin */
+
+main.home {
+  display: block;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px 20px 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.gate { max-width: 420px; margin: 40px auto; }
+.gate button { width: 100%; margin-top: 6px; }
+
+.tiles-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.tiles-head h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.tile {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tile-open {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tile-open:hover { background: #fafafb; }
+
+.tile-photo {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 5px;
+  object-fit: cover;
+  background: #e8e8ea;
+}
+
+.tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile-text strong { color: var(--ink); font-size: 13.5px; }
+.tile-role { font-size: 12.5px; color: var(--body); }
+.tile-meta { font-size: 11.5px; color: var(--muted); }
+
+.tile-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.empty { color: var(--muted); font-size: 13px; }
+
+table.users { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.users th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0 8px 6px 0;
+}
+table.users td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); }
+table.users td.right { text-align: right; white-space: nowrap; }
+
+.badge {
+  font-size: 10.5px;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  background: #ececee;
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
 
 /* ---------------------------------------------------------------- layout */
 
@@ -170,7 +324,7 @@ label {
 
 label > span { display: block; margin-bottom: 3px; }
 
-input[type="text"], textarea {
+input[type="text"], input[type="password"], textarea {
   width: 100%;
   font: inherit;
   font-size: 13px;
@@ -181,7 +335,7 @@ input[type="text"], textarea {
   background: #fff;
 }
 
-input[type="text"]:focus, textarea:focus {
+input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
   outline: 2px solid #c6c7ca;
   outline-offset: -1px;
 }

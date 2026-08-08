@@ -9,7 +9,8 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     CHROME=/usr/bin/chromium \
-    CHROME_NO_SANDBOX=1
+    CHROME_NO_SANDBOX=1 \
+    CV_DATA_DIR=/data
 
 # fonts-liberation is metric-compatible with Helvetica, which is what the
 # template asks for; without it Chromium falls back to DejaVu and the CV comes
@@ -43,8 +44,12 @@ COPY template.html ./template.html
 COPY web/ ./web/
 
 # Nothing here runs as root. The renderer writes only into per-request
-# directories under /tmp, which the compose file mounts as a tmpfs.
-RUN useradd --create-home --uid 10001 cv
+# directories under /tmp, which the compose file mounts as a tmpfs; accounts
+# and saved CVs live in /data, which is a volume.
+RUN useradd --create-home --uid 10001 cv \
+ && mkdir -p /data \
+ && chown cv:cv /data
+VOLUME ["/data"]
 USER cv
 
 WORKDIR /app/web

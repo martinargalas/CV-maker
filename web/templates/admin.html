@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CV maker — admin</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header class="bar">
+  <h1>CV maker — admin</h1>
+  <div class="bar-actions">
+    <a class="button ghost" href="/">Back to my CVs</a>
+  </div>
+</header>
+
+<p class="notice" id="notice" hidden></p>
+
+<main class="home">
+  <section class="pane" id="admin" hidden>
+
+    <div class="card">
+      <h2>New accounts</h2>
+      <label class="check">
+        <input type="checkbox" id="signup-allowed">
+        Let people create their own account
+      </label>
+      <p class="hint">
+        Turn this off once everyone who needs an account has one. It does not
+        affect accounts that already exist, and you can still add people below.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>People</h2>
+      <p class="hint">
+        This lists accounts and how many CVs each holds. It does not show what
+        is in them — running the server is not the same as being allowed to read
+        somebody's CV.
+      </p>
+      <table class="users">
+        <thead>
+          <tr><th>Username</th><th>CVs</th><th>Since</th><th></th></tr>
+        </thead>
+        <tbody id="users"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Add someone</h2>
+      <form id="add-form" autocomplete="off">
+        <div class="row">
+          <label><span>Username</span><input type="text" id="add-username" required></label>
+          <label><span>Password</span><input type="password" id="add-password" required></label>
+        </div>
+        <button type="submit" class="primary">Add account</button>
+        <p class="hint">
+          Tell them the password over something other than this app, and have
+          them change it once they are in.
+        </p>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Your password</h2>
+      <form id="password-form" autocomplete="off">
+        <div class="row">
+          <label><span>Current</span><input type="password" id="pw-current" required></label>
+          <label><span>New</span><input type="password" id="pw-new" required></label>
+        </div>
+        <button type="submit" class="ghost">Change my password</button>
+        <p class="hint">Changing it signs out every other browser you are signed in on.</p>
+      </form>
+    </div>
+
+  </section>
+</main>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

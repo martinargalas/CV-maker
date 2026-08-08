@@ -10,64 +10,49 @@
 
 <header class="bar">
   <h1>CV maker</h1>
-  <div class="bar-actions">
-    <button type="button" data-action="load-example" class="ghost">Load example</button>
-    <button type="button" data-action="import" class="ghost">Import JSON</button>
-    <button type="button" data-action="import-text" class="ghost">Import text</button>
-    <button type="button" data-action="export" class="ghost">Export JSON</button>
-    <button type="button" data-action="render" class="primary">Download PDF</button>
-  </div>
+  <div class="bar-actions" id="bar-actions"></div>
 </header>
 
 <p class="notice" id="notice" hidden></p>
 
-<section class="text-import" id="text-import" hidden>
-  <h2>Import a CV you already have as text</h2>
-  <p class="hint">
-    Paste the plain-text format — the one <code>content-example.txt</code> uses:
-    your name, your role, then sections underlined with <code>=</code>. Czech and
-    English section headings are both understood. Nothing is sent anywhere except
-    to this app, to be turned into form fields you can then correct.
-  </p>
-  <textarea id="text-import-input" rows="10" placeholder="Jane Doe&#10;Engineering Manager&#10;&#10;Personal Information&#10;===================="></textarea>
-  <div class="text-import-actions">
-    <button type="button" data-action="text-import-run" class="primary">Read it</button>
-    <button type="button" data-action="text-import-file" class="ghost">Choose a .txt file</button>
-    <button type="button" data-action="text-import-cancel" class="ghost">Cancel</button>
-  </div>
-</section>
+<main class="home">
 
-<main>
-  <section class="pane form-pane">
-    <form id="form" autocomplete="off"></form>
-    <p class="footnote">
-      Nothing you type is saved on the server. Export JSON keeps a copy on your
-      own computer; import it later to carry on.
+  <!-- Signed out: sign in, or make the first account. -->
+  <section class="pane gate" id="gate" hidden>
+    <div class="card">
+      <h2 id="gate-title">Sign in</h2>
+      <p class="hint" id="gate-hint"></p>
+      <form id="gate-form" autocomplete="on">
+        <label><span>Username</span>
+          <input type="text" id="gate-username" autocomplete="username" required></label>
+        <label><span>Password</span>
+          <input type="password" id="gate-password" autocomplete="current-password" required></label>
+        <label id="gate-code-row" hidden><span>Signup code</span>
+          <input type="text" id="gate-code" autocomplete="off"></label>
+        <button type="submit" class="primary" id="gate-submit">Sign in</button>
+        <button type="button" class="ghost" id="gate-switch"></button>
+      </form>
+      <p class="hint">
+        You do not need an account to make a CV — <a href="/edit">go straight to the
+        form</a>. An account is only for keeping CVs here to come back to.
+      </p>
+    </div>
+  </section>
+
+  <!-- Signed in: the CVs you have saved. -->
+  <section class="pane tiles-pane" id="tiles-pane" hidden>
+    <div class="tiles-head">
+      <h2>Your CVs</h2>
+      <a class="button primary" href="/edit">New CV</a>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <p class="empty" id="tiles-empty" hidden>
+      Nothing saved yet. <a href="/edit">Make one</a> and press <em>Save</em>.
     </p>
   </section>
 
-  <section class="pane preview-pane">
-    <div class="preview-head">
-      <h2>Preview</h2>
-      <span class="preview-status" id="preview-status"></span>
-    </div>
-    <div class="preview-frame" id="preview-frame">
-      <!-- The preview is built by the server and shown in a sandboxed frame.
-           allow-scripts is withheld, so it can only ever be a picture of a
-           layout; allow-same-origin is granted only so the page can measure
-           the rendered height, and is harmless without allow-scripts — it is
-           the pair of them together that would undo the sandbox. -->
-      <div class="preview-shell" id="preview-shell">
-        <iframe id="preview" title="CV preview" sandbox="allow-same-origin"></iframe>
-      </div>
-    </div>
-  </section>
 </main>
 
-<input type="file" id="photo-input" accept="image/*" hidden>
-<input type="file" id="json-input" accept="application/json,.json" hidden>
-<input type="file" id="txt-input" accept="text/plain,.txt,.md" hidden>
-
-<script src="/static/app.js"></script>
+<script src="/static/home.js"></script>
 </body>
 </html>

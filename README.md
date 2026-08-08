@@ -133,7 +133,11 @@ it. Use it to recover old content, then write it properly using the steps above.
 ## Running the web app
 
 A small self-hosted site: you fill in a form, press a button, a PDF downloads.
-No account, no login, and nothing about your CV is kept on the server.
+Meant for a home network — you run it, you and the people you live with have
+accounts on it, nobody else does.
+
+Making a CV needs no account. An account is only for keeping CVs on the server
+so you can come back to them later.
 
 You need **Docker**. Nothing else — the container brings its own browser, so
 you do not need Chrome for this route.
@@ -154,21 +158,57 @@ that it starts in seconds. Stop it with Ctrl-C.
 - Rename the section headings, or translate them — the CV does not have to be
   in English.
 - **Download PDF** gives you the same single-page file `./render.sh` produces.
+- **Save** keeps the CV in your account, so it is waiting on the front page next
+  time. Needs an account; everything else here does not.
+- **Import text** reads the plain-text format from `content-example.txt` — paste
+  it or pick the file, and it fills in the form. Useful if you already wrote your
+  CV that way, or came from the CLI route.
 - **Export JSON** saves your answers to your own computer; **Import JSON** reads
-  them back. That is how you come back to a CV later, since the server keeps
-  nothing.
+  them back. Worth doing even with an account: it is a copy that does not depend
+  on this server still being there.
 
 To emphasise part of a bullet, wrap it in stars: `**like this**`. You never
 have to type HTML.
 
+Importing text is a best guess, not a conversion — the format does not mark
+which paragraph is a job's intro and which lines are bullets, so check each job
+afterwards. Anything the parser did not recognise is listed rather than dropped
+silently.
+
+### Accounts
+
+The **first account created becomes the administrator.** Make yours as soon as
+the app is up, before anyone else can. From *Admin* they can add people, reset a
+forgotten password, remove an account, and turn off self-service signup once
+everybody who needs an account has one.
+
+An administrator manages accounts, not what is in them. There is no route that
+hands anybody another person's CV, so setting the server up for your household
+does not come with reading everyone's CV.
+
 ### What the server keeps
 
-Nothing. There is no database, no login and no upload folder. Your CV exists in
-the request while the PDF is being made and is gone once it is sent — including
-the photo, which is re-encoded in memory. Request logging is off by default,
-the PDF is sent under the fixed filename `cv.pdf` rather than your name, and
-the rate limiter counts requests against a salted digest rather than storing
-addresses.
+**Saved CVs and accounts, and nothing else.** They live in one SQLite file on
+the `cv-data` volume:
+
+- **CVs you saved**, in full, including the photo. Only ever readable by the
+  account that saved them.
+- **Accounts**: a username and a scrypt hash of the password. Passwords are not
+  stored and cannot be recovered — a forgotten one is reset, not looked up.
+- **Sessions**, as digests. The cookie holds a random token; the table holds its
+  SHA-256, so reading the database does not let anyone sign in as you.
+
+Everything else is still kept nowhere. A CV you do not save exists only for the
+length of the request. Request logging is off by default, the PDF is sent under
+the fixed filename `cv.pdf` rather than your name, and the rate limiter counts
+against a salted digest rather than storing addresses.
+
+**Back up the volume.** It is the only thing here that cannot be rebuilt, and
+`docker compose down -v` deletes it along with the stack.
+
+```bash
+docker compose exec cv-maker sh -c 'cat /data/cv.db' > cv-backup.db
+```
 
 ### Putting it on the internet
 
@@ -179,12 +219,20 @@ whatever you put in front of it — so put a reverse proxy with HTTPS there, and
 do not rely on the app being the only thing between the internet and your
 server. To keep it to the machine it runs on instead, set `CV_BIND=127.0.0.1`.
 
-Three things to know:
+Four things to know:
 
-- **Anyone who can reach the port can render a CV on your server.** There are
-  no accounts, by design. The render timeout, the concurrency limit and the
-  rate limit are what stop that from being a way to exhaust the machine; lower
-  them if it is somewhere busy, and do not raise them without a reason.
+- **Set `SIGNUP_CODE`, or turn signup off.** On a home network anyone who can
+  reach the app may create an account, which is the point. Reachable from
+  anywhere else, that means anyone at all — so either set a code, or make your
+  own account and switch signup off from the admin page.
+- **Sign-in over plain http sends the password in the clear.** On your own
+  network that is a judgement call; over the internet it is not — terminate
+  HTTPS in front of it. The session cookie marks itself Secure as soon as the
+  request arrives over https, including via a proxy that says so.
+- **Anyone who can reach the port can render a CV on your server**, with or
+  without an account. The render timeout, the concurrency limit and the rate
+  limit are what stop that from being a way to exhaust the machine; lower them
+  if it is somewhere busy, and do not raise them without a reason.
 - **Set `TRUST_PROXY: "1"` only when a proxy in front actually sets
   `X-Forwarded-For`.** Turning it on without one lets anybody forge the header
   and walk past the rate limit.
@@ -218,6 +266,10 @@ deployment tool's environment variables.
 | `TRUST_PROXY` | `0` | Read the visitor's address from `X-Forwarded-For` |
 | `CV_BIND` | `0.0.0.0` | Which host address to listen on |
 | `CV_PORT` | `8000` | Which host port to listen on |
+| `ALLOW_SIGNUP` | `1` | Whether people may create their own account at all |
+| `SIGNUP_CODE` | empty | A shared secret needed to create one |
+| `SESSION_DAYS` | `30` | How long staying signed in lasts |
+| `MAX_CVS_PER_USER` | `50` | Saved CVs one account may keep |
 
 ### Running it from Portainer
 

@@ -9,3 +9,6 @@ out/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Local database when running the web app outside Docker
+web/data/

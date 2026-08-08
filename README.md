@@ -173,9 +173,8 @@ addresses.
 ### Putting it on the internet
 
 The compose file binds to `127.0.0.1`, so out of the box it is reachable only
-from the machine it runs on. To expose it, change the `ports` line to
-`"8000:8000"` and put a reverse proxy with HTTPS in front. Two things to know
-before you do:
+from the machine it runs on. To expose it, set `CV_BIND=0.0.0.0` and put a
+reverse proxy with HTTPS in front. Two things to know before you do:
 
 - **Set `TRUST_PROXY: "1"` only when a proxy in front actually sets
   `X-Forwarded-For`.** Turning it on without one lets anybody forge the header
@@ -207,6 +206,30 @@ Change these under `environment:` in `web/docker-compose.yml`.
 | `RATE_LIMIT_PER_MINUTE` | `30` | Requests per visitor per minute |
 | `MAX_BODY_BYTES` | `3145728` | Largest request accepted |
 | `TRUST_PROXY` | `0` | Read the visitor's address from `X-Forwarded-For` |
+| `CV_BIND` | `127.0.0.1` | Which host address to listen on |
+| `CV_PORT` | `8000` | Which host port to listen on |
+
+### Running it from Portainer
+
+Add it as a stack built straight from this repository — *Stacks* → *Add stack*
+→ *Repository*:
+
+| Field | Value |
+|---|---|
+| Repository URL | this repository's URL |
+| Reference | `refs/heads/main` |
+| Compose path | `web/docker-compose.yml` |
+
+`CV_BIND` and `CV_PORT` go in the stack's environment variables, so you can
+publish it without editing anything in the repository. Remember that a stack
+on a remote machine is not reachable at all until `CV_BIND` is `0.0.0.0`, and
+that publishing it is the point at which the security notes above start to
+matter.
+
+The stack builds the image rather than pulling one, which needs a plain Docker
+environment. Docker Swarm ignores `build`, along with the memory and process
+limits; if that is where this is going, build and push the image separately
+and replace the `build:` block with `image:`.
 
 ### It does not replace the script
 

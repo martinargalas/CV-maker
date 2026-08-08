@@ -6,10 +6,12 @@ services:
       dockerfile: web/Dockerfile
     image: cv-maker
 
-    # Bound to this machine only. To put it on the network, change this to
-    # "8000:8000" — and read the security notes in README.md first.
+    # Bound to the host it runs on, and nothing else, unless CV_BIND says
+    # otherwise. Set CV_BIND=0.0.0.0 to reach it from the network — from a
+    # stack's environment variables, say — and read the security notes in
+    # README.md before you do.
     ports:
-      - "127.0.0.1:8000:8000"
+      - "${CV_BIND:-127.0.0.1}:${CV_PORT:-8000}:8000"
 
     environment:
       RENDER_TIMEOUT: "20"

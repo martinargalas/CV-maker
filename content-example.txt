@@ -1,0 +1,119 @@
+Jane Doe
+Engineering Manager
+
+Personal Information
+====================
+jane@example.com
++00 000 000 000
+City, Country
+
+Professional Summary
+====================
+Two or three sentences on what you do and what you are good at. Concrete beats
+adjectives: what you shipped, changed or fixed, and at what scale. This block
+lands in the left column, so keep it under roughly 60 words or it pushes the
+whole CV taller.
+
+Education
+=========
+Degree
+University Name, Field of Study
+City
+2010
+
+Skills
+======
+• First skill
+• Second skill, which is allowed to wrap onto two lines
+• Third skill
+• Fourth skill
+
+Websites & Social Links
+=======================
+LinkedIn: https://www.linkedin.com/in/example/
+GitHub: https://github.com/example
+
+Languages
+=========
+• English
+• Another language
+
+Hobbies
+=======
+A short line about what you do outside work.
+
+Courses
+=======
+Certification Name
+Issuing Body
+2023
+
+Another Certification
+Issuing Body
+2021
+
+Employment history
+==================
+Job Title
+Company
+City
+Jan 2024 - Present
+
+One or two sentences on the situation you walked into and what you were there
+to do. Optional — drop it if the bullets speak for themselves.
+
+Group label:
+What you did and what came of it. Numbers land harder than verbs.
+A second bullet, with an emphasised result somewhere in the middle of it.
+A third bullet.
+
+Another group label:
+Group labels are optional. A role can also be a flat list of bullets.
+Two to six bullets per group reads well; more than that and nobody finishes it.
+
+Earlier Job Title
+Company
+City
+Mar 2021 - Dec 2023
+
+Older roles need fewer bullets than recent ones.
+Two or three lines is plenty once a role is more than five years old.
+
+First Job Title
+Company
+City
+Jun 2018 - Feb 2021
+
+• Bullets can be marked or unmarked, both are fine.
+• Anything past the last ten years can usually collapse into one entry.
+
+
+--------------------------------------------------------------------------
+HOW TO USE THIS FILE
+--------------------------------------------------------------------------
+
+Fill it in with your own content and hand it, together with template.html, to
+an LLM: "build my CV from this text using this template". The structure above
+maps onto the template one-to-one:
+
+  name + role line       ->  <h1> and <p class="role"> in the header
+  section headings       ->  <h2> in the sidebar or main column
+  job title/company/city ->  <h3> inside a <div class="job">
+  date line              ->  <p class="when">
+  intro paragraph        ->  <p class="intro">
+  "Group label:"         ->  <p class="group">
+  bullet lines           ->  <li>
+
+Then run ./render.sh.
+
+Doing it by hand works too — the template is plain HTML and the classes above
+are all there is to learn.
+
+Two things worth deciding rather than defaulting:
+
+  - Ordering. The template assumes reverse chronological. If your most recent
+    entry is a career break, personal projects or study, it still goes first;
+    it is the most recent thing you did.
+
+  - Dates. Keep the format identical in every entry. Mixed formats are the
+    fastest way to make a CV look assembled rather than written.

@@ -1,0 +1,6 @@
+# Your own CVs and rendered output stay local.
+cv*.html
+out/
+*.pdf
+
+.DS_Store

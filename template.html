@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Jane Doe — CV</title>
+<style>
+  /* Page width is A4 (210mm = 793.7px at 96dpi). The height is not fixed here:
+     the script at the bottom measures the rendered content and declares a
+     matching @page size, so the whole CV prints as one tall page. */
+  :root {
+    --ink:        #1a1a1a;
+    --body:       #55565a;
+    --muted:      #7c7d81;
+    --rule:       #c9cacc;
+    --divider:    #2b2b2b;
+    --pad-left:   51px;
+    --side-width: 150px;
+    --gap:        36px;
+  }
+
+  @page { margin: 0; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    width: 793.7px;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: "Avenir Next", "Avenir", "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 9.4px;
+    line-height: 1.42;
+    color: var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    position: relative;
+    padding: 40px var(--pad-left) 46px;
+    box-sizing: border-box;
+  }
+
+  /* Hairline between the sidebar and the main column. It is broken into a short
+     stub above the header and a full-length run below it, so the rule never
+     crosses the name and role. */
+  .sheet::before,
+  .sheet::after {
+    content: "";
+    position: absolute;
+    left: 236px;
+    width: 1px;
+    background: var(--divider);
+  }
+
+  .sheet::before { top: 0; height: 46px; }
+  .sheet::after  { top: 215px; bottom: 0; }
+
+  .cols {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .side { width: var(--side-width); flex: none; }
+  .main { flex: 1; margin-left: calc(236px - var(--pad-left) - var(--side-width) + var(--gap)); }
+
+  /* ---------- header ---------- */
+
+  /* Tall enough that the photo clears the rule that opens the main column. */
+  .header { position: relative; min-height: 185px; }
+
+  h1 {
+    margin: 42px 0 0;
+    font-size: 35px;
+    font-weight: 400;
+    letter-spacing: 4.4px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .role {
+    margin: 9px 0 0;
+    font-size: 11px;
+    letter-spacing: 3.1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .photo {
+    position: absolute;
+    top: 40px;
+    right: 51px;
+    width: 99px;
+    height: 99px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  /* ---------- section headings ---------- */
+
+  h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 2.6px;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .side section + section,
+  .main  section + section { margin-top: 22px; }
+
+  .side section + section {
+    border-top: 1px solid var(--rule);
+    padding-top: 20px;
+  }
+
+  .main > section:first-child { border-top: 1px solid var(--divider); padding-top: 26px; }
+  .side > section:first-child { padding-top: 26px; }
+
+  /* ---------- sidebar ---------- */
+
+  .contact-row {
+    position: relative;
+    padding-right: 26px;
+    margin-bottom: 11px;
+  }
+
+  .contact-row .icon {
+    position: absolute;
+    top: -1px;
+    right: 0;
+    width: 17px;
+    height: 17px;
+    border-radius: 3px;
+    background: #f0f0f1;
+  }
+
+  .contact-row .icon svg { display: block; margin: 3.5px; }
+
+  .side p { margin: 0 0 8px; }
+  .side ul { margin: 0; padding: 0; list-style: none; }
+  .side li {
+    position: relative;
+    padding-left: 13px;
+    margin-bottom: 7px;
+  }
+  .side li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--body);
+  }
+
+  .side a { color: var(--body); word-break: break-all; }
+
+  .entry-title { color: var(--ink); font-weight: 600; }
+  .entry-meta  { color: var(--muted); margin: 1px 0 9px; }
+
+  /* ---------- main column ---------- */
+
+  /* The gap above a job title is what separates one job from the previous
+     one's last bullet, so it has to be clearly larger than the gap between a
+     group label and its bullets. */
+  .job { margin-bottom: 21px; }
+  .job:last-child { margin-bottom: 0; }
+
+  .job h3 {
+    margin: 0;
+    font-size: 11.8px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--ink);
+  }
+
+  .job .when { margin: 3px 0 0; color: var(--muted); }
+  .job .intro { margin: 7px 0 0; }
+
+  /* One step below the job title: smaller, and grey rather than near-black. */
+  .group { margin: 12px 0 0; font-size: 9.1px; font-weight: 600; color: #6a6b6f; }
+
+  .main ul { margin: 5px 0 0; padding: 0; list-style: none; }
+  .main li {
+    position: relative;
+    padding-left: 13px;
+    margin-bottom: 5px;
+  }
+  .main li::before {
+    content: "-";
+    position: absolute;
+    left: 2px;
+    top: 0;
+    color: var(--muted);
+  }
+
+  strong { font-weight: 600; color: #3a3b3f; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="header">
+    <h1>JANE DOE</h1>
+    <p class="role">Engineering Manager</p>
+    <img class="photo" src="photo.jpg" alt="">
+  </div>
+
+  <div class="cols">
+    <div class="side">
+
+      <section>
+        <h2>Contact</h2>
+        <div class="contact-row">
+          +00 000 000 000
+          <span class="icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#6b6c70"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></span>
+        </div>
+        <div class="contact-row">
+          jane@example.com
+          <span class="icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#6b6c70"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg></span>
+        </div>
+        <div class="contact-row">
+          City, Country
+          <span class="icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="#6b6c70"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></span>
+        </div>
+      </section>
+
+      <section>
+        <h2>About Me</h2>
+        <p>Two or three sentences on what you do and what you are good at. Keep it concrete — what you have actually shipped or changed beats adjectives. This paragraph sets the width of the sidebar column, so a long one makes the whole CV taller.</p>
+      </section>
+
+      <section>
+        <h2>Education</h2>
+        <p class="entry-title">Degree, University Name, City</p>
+        <p class="entry-meta">2010</p>
+      </section>
+
+      <section>
+        <h2>Skills</h2>
+        <ul>
+          <li>First skill</li>
+          <li>Second skill, which can wrap onto more than one line</li>
+          <li>Third skill</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Links</h2>
+        <p>LinkedIn:<br><a href="https://www.linkedin.com/in/example/">https://www.linkedin.com/in/example/</a></p>
+        <p>GitHub:<br><a href="https://github.com/example">https://github.com/example</a></p>
+      </section>
+
+      <section>
+        <h2>Languages</h2>
+        <ul>
+          <li>English</li>
+          <li>Another language</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Interests</h2>
+        <p>A short line about what you do outside work.</p>
+      </section>
+
+      <section>
+        <h2>Courses</h2>
+        <p class="entry-title">Certification Name, Issuing Body</p>
+        <p class="entry-meta">2023</p>
+      </section>
+
+    </div>
+
+    <div class="main">
+      <section>
+        <h2>Work Experience</h2>
+
+        <div class="job">
+          <h3>Job Title, Company, City</h3>
+          <p class="when">Jan 2024 - Present</p>
+          <p class="intro">One or two sentences on the situation you walked into and what you were there to do. Optional — drop the paragraph if the bullets speak for themselves.</p>
+
+          <p class="group">Group label</p>
+          <ul>
+            <li>What you did and what came of it. Numbers land harder than verbs.</li>
+            <li>A second bullet, with <strong>an emphasised result</strong> in the middle of it.</li>
+          </ul>
+
+          <p class="group">Another group label</p>
+          <ul>
+            <li>Group labels are optional — a job can be a flat list of bullets.</li>
+          </ul>
+        </div>
+
+        <div class="job">
+          <h3>Earlier Job Title, Company, City</h3>
+          <p class="when">Mar 2021 - Dec 2023</p>
+          <ul>
+            <li>Older roles usually need fewer bullets than recent ones.</li>
+            <li>Two or three lines is plenty once a job is more than five years old.</li>
+          </ul>
+        </div>
+
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Chrome paginates using the @page size, so the whole CV only stays on one
+  // page if that size matches the rendered content. Measure it, then declare it.
+  // The extra millimetre absorbs sub-pixel rounding; without it the last
+  // fraction of a line spills onto a second page.
+  const mm = document.documentElement.scrollHeight / 96 * 25.4 + 1;
+  const style = document.createElement("style");
+  style.textContent = "@page { size: 210mm " + mm.toFixed(2) + "mm; margin: 0; }";
+  document.head.appendChild(style);
+</script>
+</body>
+</html>

@@ -139,7 +139,7 @@ You need **Docker**. Nothing else — the container brings its own browser, so
 you do not need Chrome for this route.
 
 ```bash
-docker compose -f web/docker-compose.yml up --build
+docker compose up --build
 ```
 
 Then open **http://localhost:8000**. The first build takes a few minutes; after
@@ -172,10 +172,19 @@ addresses.
 
 ### Putting it on the internet
 
-The compose file binds to `127.0.0.1`, so out of the box it is reachable only
-from the machine it runs on. To expose it, set `CV_BIND=0.0.0.0` and put a
-reverse proxy with HTTPS in front. Two things to know before you do:
+**It is published on every interface by default.** A stack deployed on a server
+that nobody can open is a broken stack, so the port is exposed rather than
+hidden behind a setting people have to find. What keeps it safe is the app and
+whatever you put in front of it — so put a reverse proxy with HTTPS there, and
+do not rely on the app being the only thing between the internet and your
+server. To keep it to the machine it runs on instead, set `CV_BIND=127.0.0.1`.
 
+Three things to know:
+
+- **Anyone who can reach the port can render a CV on your server.** There are
+  no accounts, by design. The render timeout, the concurrency limit and the
+  rate limit are what stop that from being a way to exhaust the machine; lower
+  them if it is somewhere busy, and do not raise them without a reason.
 - **Set `TRUST_PROXY: "1"` only when a proxy in front actually sets
   `X-Forwarded-For`.** Turning it on without one lets anybody forge the header
   and walk past the rate limit.
@@ -197,7 +206,8 @@ cd web && pip install -r requirements.txt pytest && python -m pytest
 
 ### Settings
 
-Change these under `environment:` in `web/docker-compose.yml`.
+Change these under `environment:` in `docker-compose.yml`, or set them as your
+deployment tool's environment variables.
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -206,25 +216,22 @@ Change these under `environment:` in `web/docker-compose.yml`.
 | `RATE_LIMIT_PER_MINUTE` | `30` | Requests per visitor per minute |
 | `MAX_BODY_BYTES` | `3145728` | Largest request accepted |
 | `TRUST_PROXY` | `0` | Read the visitor's address from `X-Forwarded-For` |
-| `CV_BIND` | `127.0.0.1` | Which host address to listen on |
+| `CV_BIND` | `0.0.0.0` | Which host address to listen on |
 | `CV_PORT` | `8000` | Which host port to listen on |
 
 ### Running it from Portainer
 
-Add it as a stack built straight from this repository — *Stacks* → *Add stack*
-→ *Repository*:
+*Stacks* → *Add stack* → *Repository*, then fill in the repository URL and
+deploy. Everything else can stay as Portainer prefills it — the compose file is
+at the root under its default name, so the *Compose path* field is already
+right, and no environment variable is needed to reach the app.
 
-| Field | Value |
-|---|---|
-| Repository URL | this repository's URL |
-| Reference | `refs/heads/main` |
-| Compose path | `web/docker-compose.yml` |
+The one field Portainer will not accept as typed is the stack **Name**: it has
+to be lower case, so `cv-maker` rather than `CV-maker`.
 
-`CV_BIND` and `CV_PORT` go in the stack's environment variables, so you can
-publish it without editing anything in the repository. Remember that a stack
-on a remote machine is not reachable at all until `CV_BIND` is `0.0.0.0`, and
-that publishing it is the point at which the security notes above start to
-matter.
+If you want to change the port or keep it off the network, `CV_PORT` and
+`CV_BIND` go in the stack's environment variables — no need to fork the
+repository to edit a file.
 
 The stack builds the image rather than pulling one, which needs a plain Docker
 environment. Docker Swarm ignores `build`, along with the memory and process

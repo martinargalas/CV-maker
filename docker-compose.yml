@@ -1,0 +1,60 @@
+# The web app: a form in a browser, a single-page PDF out.
+#
+#   docker compose up --build     then open http://localhost:8000
+#
+# This file sits at the repository root rather than next to the rest of the app
+# in web/, because that is where every deployment tool looks for it by default
+# — Portainer's "Compose path" is prefilled with exactly this. A stack built
+# from this repository should work without anyone having to correct a field.
+services:
+  cv-maker:
+    build:
+      # The root, because the image needs template.html from here — it is
+      # shared with the CLI renderer.
+      context: .
+      dockerfile: web/Dockerfile
+    image: cv-maker
+    # Rebuild rather than reuse an image of that name that is already on the
+    # host. Without it, redeploying after a change quietly keeps the old one.
+    pull_policy: build
+
+    # Published on every interface, because this is meant to be reached from
+    # another machine and a stack nobody can open is a broken stack. What
+    # protects it is the app itself and what you put in front of it, not a
+    # binding people have to discover and change.
+    #
+    # To keep it to the host it runs on, set CV_BIND=127.0.0.1.
+    ports:
+      - "${CV_BIND:-0.0.0.0}:${CV_PORT:-8000}:8000"
+
+    environment:
+      RENDER_TIMEOUT: "20"
+      MAX_CONCURRENT_RENDERS: "2"
+      RATE_LIMIT_PER_MINUTE: "30"
+      # Set to 1 only when a reverse proxy in front sets X-Forwarded-For, or
+      # rate limiting can be defeated by forging the header.
+      TRUST_PROXY: "0"
+
+    # Chromium runs without its own sandbox, so the container is the boundary
+    # instead: nothing gains privileges, no capabilities, and the only writable
+    # place is the temporary directory the renderer cleans up after itself.
+    init: true
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+
+    # A browser process is expensive; keep one bad day from taking the host.
+    mem_limit: 1g
+    pids_limit: 512
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

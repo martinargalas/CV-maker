@@ -13,12 +13,29 @@
   <div class="bar-actions">
     <button type="button" data-action="load-example" class="ghost">Load example</button>
     <button type="button" data-action="import" class="ghost">Import JSON</button>
+    <button type="button" data-action="import-text" class="ghost">Import text</button>
     <button type="button" data-action="export" class="ghost">Export JSON</button>
     <button type="button" data-action="render" class="primary">Download PDF</button>
   </div>
 </header>
 
 <p class="notice" id="notice" hidden></p>
+
+<section class="text-import" id="text-import" hidden>
+  <h2>Import a CV you already have as text</h2>
+  <p class="hint">
+    Paste the plain-text format — the one <code>content-example.txt</code> uses:
+    your name, your role, then sections underlined with <code>=</code>. Czech and
+    English section headings are both understood. Nothing is sent anywhere except
+    to this app, to be turned into form fields you can then correct.
+  </p>
+  <textarea id="text-import-input" rows="10" placeholder="Jane Doe&#10;Engineering Manager&#10;&#10;Personal Information&#10;===================="></textarea>
+  <div class="text-import-actions">
+    <button type="button" data-action="text-import-run" class="primary">Read it</button>
+    <button type="button" data-action="text-import-file" class="ghost">Choose a .txt file</button>
+    <button type="button" data-action="text-import-cancel" class="ghost">Cancel</button>
+  </div>
+</section>
 
 <main>
   <section class="pane form-pane">
@@ -49,6 +66,7 @@
 
 <input type="file" id="photo-input" accept="image/*" hidden>
 <input type="file" id="json-input" accept="application/json,.json" hidden>
+<input type="file" id="txt-input" accept="text/plain,.txt,.md" hidden>
 
 <script src="/static/app.js"></script>
 </body>

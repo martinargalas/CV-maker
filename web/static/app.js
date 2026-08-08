@@ -404,6 +404,55 @@ $("#json-input").addEventListener("change", (event) => {
   reader.readAsText(file);
 });
 
+/* ------------------------------------------------- importing plain text */
+
+async function readText(text) {
+  if (!text.trim()) {
+    notice("Nothing to read — paste your CV text first.");
+    return;
+  }
+  try {
+    const response = await fetch("/api/import-text", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      body: text,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `${response.status}`);
+
+    state = normalize(data.cv);
+    $("#text-import").hidden = true;
+    $("#text-import-input").value = "";
+    // The text format does not mark which paragraph is a job's intro, so say
+    // so rather than let a wrong guess pass as a finished CV.
+    notice([
+      "Imported — check it over, especially each job's intro.",
+      ...data.warnings,
+    ].join(" "));
+    changed({ redraw: true });
+  } catch (error) {
+    notice(`Import failed — ${error.message}`);
+  }
+}
+
+$("#txt-input").addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => readText(String(reader.result));
+  reader.readAsText(file);
+});
+
+$("#text-import").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const { action } = button.dataset;
+  if (action === "text-import-run") readText($("#text-import-input").value);
+  else if (action === "text-import-file") $("#txt-input").click();
+  else if (action === "text-import-cancel") $("#text-import").hidden = true;
+});
+
 document.querySelector(".bar-actions").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
@@ -411,6 +460,10 @@ document.querySelector(".bar-actions").addEventListener("click", async (event) =
 
   if (action === "import") {
     $("#json-input").click();
+  } else if (action === "import-text") {
+    const panel = $("#text-import");
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) $("#text-import-input").focus();
   } else if (action === "export") {
     download(new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }), "cv.json");
   } else if (action === "load-example") {

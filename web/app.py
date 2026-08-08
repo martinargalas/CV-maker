@@ -19,8 +19,10 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
 import photo as photo_lib
+import textimport
 from cvdoc import CV, build_document
 from render import RenderError, page_count, render_pdf
 
@@ -135,6 +137,32 @@ async def api_photo(request: Request, file: UploadFile = File(...)) -> dict:
         return {"photo": photo_lib.to_data_uri(raw)}
     except photo_lib.PhotoError as exc:
         raise HTTPException(400, str(exc))
+
+
+@app.post("/api/import-text")
+async def api_import_text(request: Request) -> dict:
+    """Read the plain-text CV format into form fields.
+
+    The text is parsed, never executed and never rendered as it stands: what
+    comes back is data for the form, which the person then sees and can correct
+    before anything is drawn. It is validated against the same model as typed
+    input, so an import cannot smuggle in a field the form would refuse.
+    """
+    rate_limit(request)
+    raw = await request.body()
+    if len(raw) > textimport.MAX_TEXT:
+        raise HTTPException(413, "That file is too large to read.")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(400, "That file is not readable text. Save it as UTF-8 and retry.")
+
+    fields, warnings = textimport.parse(text)
+    try:
+        cv = CV.model_validate(fields)
+    except ValidationError:
+        raise HTTPException(422, "That file could not be read as a CV.")
+    return {"cv": cv.model_dump(), "warnings": warnings}
 
 
 @app.post("/api/preview")

@@ -48,7 +48,9 @@ Para = Annotated[str, StringConstraints(max_length=1500, strip_whitespace=True)]
 class Link(BaseModel):
     model_config = ConfigDict(extra="forbid")
     label: Short = ""
-    url: Short = ""
+    # Longer than the other short fields: profile URLs carrying a tracking tail
+    # are common, and truncating a URL leaves a link that goes nowhere.
+    url: Line = ""
 
 
 class Entry(BaseModel):

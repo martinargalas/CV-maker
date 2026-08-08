@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CV maker</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header class="bar">
+  <h1>CV maker</h1>
+  <div class="bar-actions">
+    <button type="button" data-action="load-example" class="ghost">Load example</button>
+    <button type="button" data-action="import" class="ghost">Import JSON</button>
+    <button type="button" data-action="export" class="ghost">Export JSON</button>
+    <button type="button" data-action="render" class="primary">Download PDF</button>
+  </div>
+</header>
+
+<p class="notice" id="notice" hidden></p>
+
+<main>
+  <section class="pane form-pane">
+    <form id="form" autocomplete="off"></form>
+    <p class="footnote">
+      Nothing you type is saved on the server. Export JSON keeps a copy on your
+      own computer; import it later to carry on.
+    </p>
+  </section>
+
+  <section class="pane preview-pane">
+    <div class="preview-head">
+      <h2>Preview</h2>
+      <span class="preview-status" id="preview-status"></span>
+    </div>
+    <div class="preview-frame" id="preview-frame">
+      <!-- The preview is built by the server and shown in a sandboxed frame
+           with no script permission, so it can only ever be a picture of a
+           layout. -->
+      <iframe id="preview" title="CV preview" sandbox></iframe>
+    </div>
+  </section>
+</main>
+
+<input type="file" id="photo-input" accept="image/*" hidden>
+<input type="file" id="json-input" accept="application/json,.json" hidden>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

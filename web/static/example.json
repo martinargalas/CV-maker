@@ -1,0 +1,76 @@
+{
+  "name": "Jane Doe",
+  "role": "Engineering Manager",
+  "uppercase_name": true,
+  "phone": "+00 000 000 000",
+  "email": "jane@example.com",
+  "location": "City, Country",
+  "photo": "",
+  "about": "Two or three sentences on what you do and what you are good at. Keep it concrete — what you have actually shipped or changed beats adjectives. This paragraph sets the width of the sidebar column, so a long one makes the whole CV taller.",
+  "education": [
+    { "title": "Degree", "subtitle": "University Name, City", "meta": "2010" }
+  ],
+  "skills": [
+    "First skill",
+    "Second skill, which can wrap onto more than one line",
+    "Third skill"
+  ],
+  "links": [
+    { "label": "LinkedIn", "url": "https://www.linkedin.com/in/example/" },
+    { "label": "GitHub", "url": "https://github.com/example" }
+  ],
+  "languages": ["English", "Another language"],
+  "interests": "A short line about what you do outside work.",
+  "courses": [
+    { "title": "Certification Name", "subtitle": "Issuing Body", "meta": "2023" }
+  ],
+  "jobs": [
+    {
+      "title": "Job Title",
+      "company": "Company",
+      "city": "City",
+      "when": "Jan 2024 - Present",
+      "intro": "One or two sentences on the situation you walked into and what you were there to do. Optional — drop the paragraph if the bullets speak for themselves.",
+      "groups": [
+        {
+          "label": "Group label",
+          "bullets": [
+            "What you did and what came of it. Numbers land harder than verbs.",
+            "A second bullet, with **an emphasised result** in the middle of it."
+          ]
+        },
+        {
+          "label": "Another group label",
+          "bullets": ["Group labels are optional — a job can be a flat list of bullets."]
+        }
+      ]
+    },
+    {
+      "title": "Earlier Job Title",
+      "company": "Company",
+      "city": "City",
+      "when": "Mar 2021 - Dec 2023",
+      "intro": "",
+      "groups": [
+        {
+          "label": "",
+          "bullets": [
+            "Older roles usually need fewer bullets than recent ones.",
+            "Two or three lines is plenty once a job is more than five years old."
+          ]
+        }
+      ]
+    }
+  ],
+  "labels": {
+    "contact": "Contact",
+    "about": "About Me",
+    "education": "Education",
+    "skills": "Skills",
+    "links": "Links",
+    "languages": "Languages",
+    "interests": "Interests",
+    "courses": "Courses",
+    "work": "Work Experience"
+  }
+}

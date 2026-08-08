@@ -4,3 +4,8 @@ out/
 *.pdf
 
 .DS_Store
+
+# Python bytecode from the web app
+__pycache__/
+*.pyc
+.pytest_cache/

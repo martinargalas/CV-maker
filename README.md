@@ -18,6 +18,15 @@ details and skills down the left, work history on the right." width="420">
 - **Yours.** No account, no subscription, no watermark, no site that locks the
   download behind a paywall.
 
+## Two ways to use this
+
+**Edit a file, run a script.** The steps below. You need Chrome and about ten
+minutes, and you end up editing a bit of HTML.
+
+**Fill in a form in your browser.** If editing HTML is not for you, run the web
+app instead: one command, a form, a *Download PDF* button. Same renderer, same
+result — see [Running the web app](#running-the-web-app).
+
 ## Before you start
 
 You need **Google Chrome** installed. That's it. (Chromium and Edge also work.)
@@ -120,6 +129,95 @@ removed automatically. Needs Pillow (`pip install pillow`).
 
 This gives you a picture of a CV, not real text — recruiters' systems can't read
 it. Use it to recover old content, then write it properly using the steps above.
+
+## Running the web app
+
+A small self-hosted site: you fill in a form, press a button, a PDF downloads.
+No account, no login, and nothing about your CV is kept on the server.
+
+You need **Docker**. Nothing else — the container brings its own browser, so
+you do not need Chrome for this route.
+
+```bash
+docker compose -f web/docker-compose.yml up --build
+```
+
+Then open **http://localhost:8000**. The first build takes a few minutes; after
+that it starts in seconds. Stop it with Ctrl-C.
+
+### What you can do there
+
+- Fill in name, contact, summary, jobs, education, skills, links, languages,
+  courses. Jobs hold groups of bullets; every list has *add* and *remove*.
+- Upload a photo. It is resized and re-encoded as you upload it.
+- Watch the layout update as you type.
+- Rename the section headings, or translate them — the CV does not have to be
+  in English.
+- **Download PDF** gives you the same single-page file `./render.sh` produces.
+- **Export JSON** saves your answers to your own computer; **Import JSON** reads
+  them back. That is how you come back to a CV later, since the server keeps
+  nothing.
+
+To emphasise part of a bullet, wrap it in stars: `**like this**`. You never
+have to type HTML.
+
+### What the server keeps
+
+Nothing. There is no database, no login and no upload folder. Your CV exists in
+the request while the PDF is being made and is gone once it is sent — including
+the photo, which is re-encoded in memory. Request logging is off by default,
+the PDF is sent under the fixed filename `cv.pdf` rather than your name, and
+the rate limiter counts requests against a salted digest rather than storing
+addresses.
+
+### Putting it on the internet
+
+The compose file binds to `127.0.0.1`, so out of the box it is reachable only
+from the machine it runs on. To expose it, change the `ports` line to
+`"8000:8000"` and put a reverse proxy with HTTPS in front. Two things to know
+before you do:
+
+- **Set `TRUST_PROXY: "1"` only when a proxy in front actually sets
+  `X-Forwarded-For`.** Turning it on without one lets anybody forge the header
+  and walk past the rate limit.
+- **Chromium runs without its own sandbox**, because that needs privileges the
+  compose file deliberately refuses. The container is the boundary instead: no
+  root, no capabilities, no new privileges, a read-only filesystem and a tmpfs
+  for the one directory anything writes to. Keep those settings.
+
+The renderer treats every field as hostile: text is escaped rather than
+interpreted, the only script in the document is the one that measures the page
+height, links that are not `http://` or `https://` are dropped, name resolution
+is broken inside the browser so nothing can call out, and uploaded images are
+decoded and re-encoded rather than passed through. `web/tests/test_security.py`
+is the checklist, and it runs in a couple of seconds:
+
+```bash
+cd web && pip install -r requirements.txt pytest && python -m pytest
+```
+
+### Settings
+
+Change these under `environment:` in `web/docker-compose.yml`.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `RENDER_TIMEOUT` | `20` | Seconds before a stuck render is killed |
+| `MAX_CONCURRENT_RENDERS` | `2` | Browsers allowed at once — each one is expensive |
+| `RATE_LIMIT_PER_MINUTE` | `30` | Requests per visitor per minute |
+| `MAX_BODY_BYTES` | `3145728` | Largest request accepted |
+| `TRUST_PROXY` | `0` | Read the visitor's address from `X-Forwarded-For` |
+
+### It does not replace the script
+
+`./render.sh` works exactly as before, with or without the web app, and needs
+nothing from `web/`. Both doors use the same `template.html` and the same
+Chrome flags, so they produce the same PDF — verified by rendering the same
+content each way and comparing the drawing operators in the two files.
+
+If you edit `template.html` to restyle your CV, both routes change together.
+The `slot` comments in it mark the regions the web app fills in; leave them
+where they are and the file behaves like ordinary HTML.
 
 ## Licence
 

@@ -1,7 +1,11 @@
 # Web app — build spec
 
 Turn the CLI renderer into a self-hosted web app, so people who won't open a
-terminal can use it. Not built yet; this is the brief.
+terminal can use it.
+
+**Built.** It lives in `web/`; see *Running the web app* in README.md. This
+file is kept as the brief it was written as, so the decisions below can be
+checked against what was actually built.
 
 ## What it does
 

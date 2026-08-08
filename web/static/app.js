@@ -306,12 +306,15 @@ function draw() {
 /* ------------------------------------------------------------- preview */
 
 function fitPreview() {
-  const available = frame.parentElement.clientWidth - 20;
+  const shell = $("#preview-shell");
+  const available = shell.parentElement.clientWidth - 22;
   const scale = Math.min(1, available / 794);
-  frame.style.transform = `scale(${scale})`;
   const height = frame.contentDocument?.documentElement?.scrollHeight || 1123;
+
   frame.style.height = `${height}px`;
-  frame.parentElement.style.height = `${height * scale + 20}px`;
+  frame.style.transform = `scale(${scale})`;
+  shell.style.width = `${794 * scale}px`;
+  shell.style.height = `${height * scale}px`;
 }
 
 async function refreshPreview() {

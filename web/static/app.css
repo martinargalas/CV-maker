@@ -240,6 +240,11 @@ details.labels[open] summary { margin-bottom: 10px; }
   padding: 10px;
 }
 
+/* The frame is laid out at the CV's real width and then scaled down. A scaled
+   element still occupies its unscaled size, so the shell is sized to the
+   scaled dimensions and clips the difference. */
+.preview-shell { overflow: hidden; }
+
 #preview {
   display: block;
   width: 794px;

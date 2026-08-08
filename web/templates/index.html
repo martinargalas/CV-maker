@@ -35,10 +35,14 @@
       <span class="preview-status" id="preview-status"></span>
     </div>
     <div class="preview-frame" id="preview-frame">
-      <!-- The preview is built by the server and shown in a sandboxed frame
-           with no script permission, so it can only ever be a picture of a
-           layout. -->
-      <iframe id="preview" title="CV preview" sandbox></iframe>
+      <!-- The preview is built by the server and shown in a sandboxed frame.
+           allow-scripts is withheld, so it can only ever be a picture of a
+           layout; allow-same-origin is granted only so the page can measure
+           the rendered height, and is harmless without allow-scripts — it is
+           the pair of them together that would undo the sandbox. -->
+      <div class="preview-shell" id="preview-shell">
+        <iframe id="preview" title="CV preview" sandbox="allow-same-origin"></iframe>
+      </div>
     </div>
   </section>
 </main>

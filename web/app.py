@@ -104,10 +104,17 @@ async def index() -> FileResponse:
     return FileResponse(
         HERE / "templates" / "index.html",
         headers={
-            # The page loads only its own script and stylesheet, and the preview
-            # runs inside a sandboxed iframe with no script permission.
+            # The page loads only its own script and stylesheet. script-src is
+            # the directive that matters here and it stays at 'self'.
+            #
+            # style-src has to allow inline styles, and not for this page's
+            # sake: a srcdoc iframe inherits its parent's policy, and the CV
+            # document is inline-styled by design — that <style> block is the
+            # template, shared with the CLI. Without this the preview renders
+            # as unstyled text.
             "Content-Security-Policy": (
-                "default-src 'none'; script-src 'self'; style-src 'self'; "
+                "default-src 'none'; script-src 'self'; "
+                "style-src 'self' 'unsafe-inline'; "
                 "img-src 'self' data:; connect-src 'self'; frame-src 'self' data:; "
                 "base-uri 'none'; form-action 'none'"
             )

@@ -5,10 +5,14 @@
   "phone": "+00 000 000 000",
   "email": "jane@example.com",
   "location": "City, Country",
-  "photo": "",
+  "photo": "data:image/jpeg;base64,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",
   "about": "Two or three sentences on what you do and what you are good at. Keep it concrete — what you have actually shipped or changed beats adjectives. This paragraph sets the width of the sidebar column, so a long one makes the whole CV taller.",
   "education": [
-    { "title": "Degree", "subtitle": "University Name, City", "meta": "2010" }
+    {
+      "title": "Degree",
+      "subtitle": "University Name, City",
+      "meta": "2010"
+    }
   ],
   "skills": [
     "First skill",
@@ -16,13 +20,26 @@
     "Third skill"
   ],
   "links": [
-    { "label": "LinkedIn", "url": "https://www.linkedin.com/in/example/" },
-    { "label": "GitHub", "url": "https://github.com/example" }
+    {
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/example/"
+    },
+    {
+      "label": "GitHub",
+      "url": "https://github.com/example"
+    }
   ],
-  "languages": ["English", "Another language"],
+  "languages": [
+    "English",
+    "Another language"
+  ],
   "interests": "A short line about what you do outside work.",
   "courses": [
-    { "title": "Certification Name", "subtitle": "Issuing Body", "meta": "2023" }
+    {
+      "title": "Certification Name",
+      "subtitle": "Issuing Body",
+      "meta": "2023"
+    }
   ],
   "jobs": [
     {
@@ -41,7 +58,9 @@
         },
         {
           "label": "Another group label",
-          "bullets": ["Group labels are optional — a job can be a flat list of bullets."]
+          "bullets": [
+            "Group labels are optional — a job can be a flat list of bullets."
+          ]
         }
       ]
     },

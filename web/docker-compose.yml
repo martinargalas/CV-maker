@@ -5,6 +5,9 @@ services:
       context: ..
       dockerfile: web/Dockerfile
     image: cv-maker
+    # Rebuild rather than reuse an image of that name that is already on the
+    # host. Without it, redeploying after a change quietly keeps the old one.
+    pull_policy: build
 
     # Bound to the host it runs on, and nothing else, unless CV_BIND says
     # otherwise. Set CV_BIND=0.0.0.0 to reach it from the network — from a

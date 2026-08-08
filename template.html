@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Jane Doe — CV</title>
+<title><!--slot:title-->Jane Doe — CV<!--/slot:title--></title>
 <style>
   /* Page width is A4 (210mm = 793.7px at 96dpi). The height is not fixed here:
      the script at the bottom measures the rendered content and declares a
@@ -200,16 +200,23 @@
 </style>
 </head>
 <body>
+<!-- The "slot:name" / "/slot:name" comment pairs below mark the regions that the
+     web app in web/ replaces when it builds a CV from a filled-in form. They are
+     ordinary HTML comments: editing this file by hand for ./render.sh works
+     exactly as before, and the placeholder content between them is real. -->
 <div class="sheet">
 
   <div class="header">
+    <!--slot:header-->
     <h1>JANE DOE</h1>
     <p class="role">Engineering Manager</p>
     <img class="photo" src="photo.jpg" alt="">
+    <!--/slot:header-->
   </div>
 
   <div class="cols">
     <div class="side">
+      <!--slot:side-->
 
       <section>
         <h2>Contact</h2>
@@ -271,10 +278,12 @@
         <p class="entry-title">Certification Name, Issuing Body</p>
         <p class="entry-meta">2023</p>
       </section>
+      <!--/slot:side-->
 
     </div>
 
     <div class="main">
+      <!--slot:main-->
       <section>
         <h2>Work Experience</h2>
 
@@ -305,6 +314,7 @@
         </div>
 
       </section>
+      <!--/slot:main-->
     </div>
   </div>
 </div>

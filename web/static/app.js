@@ -91,9 +91,18 @@ function setPath(path, value) {
   node[last] = value;
 }
 
-function notice(message) {
+function notice(message, { link, good = false } = {}) {
   noticeEl.textContent = message || "";
   noticeEl.hidden = !message;
+  noticeEl.classList.toggle("good", Boolean(message) && good);
+  if (message && link) {
+    // Built as an element rather than markup: nothing that reaches this
+    // function is ever parsed as HTML.
+    const anchor = document.createElement("a");
+    anchor.href = link.href;
+    anchor.textContent = link.text;
+    noticeEl.append(" ", anchor);
+  }
 }
 
 async function postJSON(url, body, method = "POST") {
@@ -510,9 +519,11 @@ async function save() {
       // rather than starting a new one.
       history.replaceState(null, "", `/edit?id=${encodeURIComponent(savedId)}`);
     }
-    notice("");
     button.textContent = "Saved";
     setTimeout(() => { button.textContent = "Save"; }, 1500);
+    // Saving is the step that puts this CV on the front page, so that is the
+    // moment to say where it went and offer the way there.
+    notice("Saved.", { good: true, link: { href: "/", text: "See all your CVs →" } });
   } catch (error) {
     notice(`Could not save — ${error.message}`);
   } finally {
@@ -527,6 +538,8 @@ async function save() {
     const me = await (await fetch("/api/me")).json();
     signedIn = Boolean(me.signed_in);
     $("#save-button").hidden = !signedIn;
+    // Only worth offering when there is a page of saved CVs to go back to.
+    $("#mine-link").hidden = !signedIn;
   } catch (_) {}
 
   if (savedId && signedIn) {

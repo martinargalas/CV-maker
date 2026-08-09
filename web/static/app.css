@@ -112,6 +112,7 @@ a.button.primary { background: var(--accent); border-color: var(--accent); color
 .who { font-size: 13px; color: var(--muted); align-self: center; }
 
 .notice.good { background: #eaf5ec; color: #2b6b3a; border-bottom-color: #cfe6d5; }
+.notice a { color: inherit; }
 
 /* ------------------------------------------------------- home and admin */
 

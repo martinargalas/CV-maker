@@ -1,25 +1,7 @@
 # Web app — build spec
 
 Turn the CLI renderer into a self-hosted web app, so people who won't open a
-terminal can use it.
-
-**Built.** It lives in `web/`; see *Running the web app* in README.md. This
-file is kept as the brief it was written as, so the decisions below can be
-checked against what was actually built.
-
-Three things were then asked for that this brief rules out. README.md is the
-accurate description; where the two disagree, believe the README.
-
-- **Accounts and saved CVs exist.** The brief put them out of scope and said
-  nothing is stored on the server. There is now a landing page of saved CVs,
-  which needs somewhere to save them and somebody to own them.
-- **The plain-text format can be imported.** The brief left it to the CLI.
-- **The compose file is at the repository root**, not in `web/`, because that
-  is where deployment tools look for it.
-
-What did not change: the form never shows anybody HTML, the template is still
-shared with the CLI rather than forked, and the security rules below still hold
-line for line.
+terminal can use it. Not built yet; this is the brief.
 
 ## What it does
 
@@ -56,6 +38,40 @@ Out, at least for v1:
 - Multiple visual themes
 - LLM integration or anything needing an API key
 - Editing the plain-text format from `content-example.txt` — that's the CLI path
+
+## Importing an existing PDF
+
+People arrive with a CV they already have. Retyping it into a form is the reason
+they'd close the tab, so import is worth building — but be honest about what it
+can do.
+
+**Pulling text out of a PDF is easy. Working out what the text *means* is not.**
+A PDF has no idea that one line is a job title and the next is a date; that's
+carried by font size, position and spacing, and every CV template encodes it
+differently. Any parser that guesses will be wrong often enough to annoy.
+
+So v1 does not guess:
+
+1. Extract text with layout preserved (`pdfminer.six` or PyMuPDF).
+2. Show it in a **review screen** — extracted text on the left, the form on the
+   right, user drags or pastes each chunk into the right field.
+3. Save as JSON. From then on they use the JSON, never the PDF again.
+
+That always works, and it's honest about doing half the job. Prefilling the
+obvious wins is fine — email, phone and URLs are safe to detect with a regex and
+drop straight into the right fields.
+
+Structure detection is a v2 problem, and the good version of it is an LLM
+mapping extracted text onto the field schema. That needs an API key, which v1
+deliberately doesn't require — so if it's built, it's optional and
+bring-your-own-key, never a dependency.
+
+Out of scope: scanned or image-only PDFs. Detect that there's no text layer and
+say so plainly rather than returning an empty form. OCR is a different project.
+
+Security note: PDF parsers are a well-known attack surface — malformed files
+crash or exploit them. Parse inside the container, cap file size and page count,
+and put a timeout on it. Never pass an uploaded file to a shell command.
 
 ## Stack
 

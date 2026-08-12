@@ -24,6 +24,7 @@ const blank = () => ({
   education: [], skills: [], links: [], languages: [],
   interests: "", courses: [],
   jobs: [],
+  show_durations: false, duration_language: "en",
   labels: Object.fromEntries(LABEL_FIELDS),
 });
 
@@ -59,6 +60,8 @@ function normalize(loaded) {
   })) : [];
   out.labels = { ...base.labels, ...(loaded?.labels || {}) };
   out.uppercase_name = Boolean(out.uppercase_name);
+  out.show_durations = Boolean(out.show_durations);
+  out.duration_language = out.duration_language === "cs" ? "cs" : "en";
   // Only the shape /api/photo produces. Anything else is dropped rather than
   // put into an <img src>.
   out.photo = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(out.photo) ? out.photo : "";
@@ -274,6 +277,19 @@ function draw() {
 
     <fieldset>
       <legend>Work experience</legend>
+      <label class="check">
+        <input type="checkbox" data-path="show_durations" ${state.show_durations ? "checked" : ""}>
+        Show how long each job lasted, after the dates
+      </label>
+      ${state.show_durations ? `
+      <label class="inline-select"><span>Worded in</span>
+        <select data-path="duration_language">
+          <option value="en"${state.duration_language === "en" ? " selected" : ""}>English — 1 year 7 months</option>
+          <option value="cs"${state.duration_language === "cs" ? " selected" : ""}>Czech — 1 rok 7 měsíců</option>
+        </select>
+      </label>
+      <p class="hint">Worked out from the dates you type, so a job still running
+        keeps counting. A date line this cannot read is simply left alone.</p>` : ""}
       ${state.jobs.map((_, i) => jobBlock(i)).join("")}
       <p>${addButton("jobs", "job", "job")}</p>
     </fieldset>
@@ -375,11 +391,15 @@ function changed({ redraw = false } = {}) {
 
 /* ------------------------------------------------------------- actions */
 
+// Fields that reveal or hide other fields have to redraw the form; everything
+// else updates state in place, so the caret stays where the person left it.
+const REDRAWS = new Set(["show_durations"]);
+
 form.addEventListener("input", (event) => {
   const path = event.target.dataset.path;
   if (!path) return;
   setPath(path, event.target.type === "checkbox" ? event.target.checked : event.target.value);
-  changed();
+  changed({ redraw: REDRAWS.has(path) });
 });
 
 form.addEventListener("click", (event) => {

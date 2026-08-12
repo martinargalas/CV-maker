@@ -20,9 +20,11 @@ import re
 import secrets
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+import duration
 from typing_extensions import Annotated
 from pydantic import StringConstraints
 
@@ -115,6 +117,13 @@ class CV(BaseModel):
     courses: List[Entry] = Field(default_factory=list, max_length=MAX_ENTRIES)
 
     jobs: List[Job] = Field(default_factory=list, max_length=MAX_JOBS)
+
+    # Off by default: it is a claim about the dates, and it should be the
+    # holder's decision to make it rather than something that appears on its
+    # own. Worked out when the CV is drawn, so a job still running keeps
+    # counting instead of freezing at whatever it said the day it was saved.
+    show_durations: bool = False
+    duration_language: Literal["en", "cs"] = "en"
 
     labels: Labels = Field(default_factory=Labels)
 
@@ -260,13 +269,21 @@ def _side(cv: CV) -> str:
     return "\n\n".join(s for s in sections if s)
 
 
-def _job(job: Job) -> str:
+def _job(job: Job, cv: CV) -> str:
     out = []
     title = _join(job.title, job.company, job.city)
     if title:
         out.append(f"<h3>{_text(title)}</h3>")
     if job.when:
-        out.append(f'<p class="when">{_text(job.when)}</p>')
+        when = job.when
+        if cv.show_durations:
+            # Silence rather than a guess: a date line this cannot read gets
+            # left exactly as it was typed. A CV showing the wrong tenure is
+            # worse than one showing none.
+            length = duration.for_line(job.when, cv.duration_language)
+            if length:
+                when = f"{job.when} ({length})"
+        out.append(f'<p class="when">{_text(when)}</p>')
     if job.intro:
         out.append(f'<p class="intro">{_rich(job.intro)}</p>')
 
@@ -286,7 +303,7 @@ def _job(job: Job) -> str:
 
 
 def _main(cv: CV) -> str:
-    jobs = "\n\n".join(j for j in (_job(job) for job in cv.jobs) if j)
+    jobs = "\n\n".join(j for j in (_job(job, cv) for job in cv.jobs) if j)
     return _section(cv.labels.work, jobs)
 
 
@@ -310,10 +327,20 @@ def _template() -> str:
     return text
 
 
-def _fill(doc: str, name: str, content: str) -> str:
+def _fill(doc: str, name: str, content: str, keep_markers: bool = True) -> str:
+    """Replace what is between a pair of slot markers.
+
+    The markers normally stay, so the built document has the same shape as the
+    template and can be read alongside it. Not everywhere, though: inside
+    <title> a comment is not a comment — the element holds plain text — so
+    leaving them there puts "<!--slot:title-->" in the document title and from
+    there into the PDF's metadata, where a reader shows it as the file's name.
+    """
     start, end = _SLOT.format(name=name), _SLOT_END.format(name=name)
     head, _, rest = doc.partition(start)
     _, _, tail = rest.partition(end)
+    if not keep_markers:
+        return f"{head}{content}{tail}"
     return f"{head}{start}\n{content}\n{end}{tail}"
 
 
@@ -326,7 +353,7 @@ def build_document(cv: CV) -> str:
     nonce = secrets.token_urlsafe(16)
     doc = _template()
 
-    doc = _fill(doc, "title", _text(cv.name or "CV"))
+    doc = _fill(doc, "title", _text(cv.name or "CV"), keep_markers=False)
     doc = _fill(doc, "header", _header(cv))
     doc = _fill(doc, "side", _side(cv))
     doc = _fill(doc, "main", _main(cv))

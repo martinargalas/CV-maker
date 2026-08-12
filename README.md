@@ -164,6 +164,10 @@ that it starts in seconds. Stop it with Ctrl-C.
   plain-text format from `content-example.txt`, pick a `.txt` file, or hand it
   the PDF of your current CV.
 - **Reorder** jobs and groups of bullets with the ↑ and ↓ buttons on each block.
+- **Show how long each job lasted** — a switch under *Work experience* adds
+  `(1 year 7 months)` after the dates, worded in English or Czech. It is worked
+  out from the dates when the CV is drawn, so a job still running keeps
+  counting, and a date line it cannot read is left exactly as you typed it.
 - **Export JSON** saves your answers to your own computer; **Import JSON** reads
   them back. Worth doing even with an account: it is a copy that does not depend
   on this server still being there.

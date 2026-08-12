@@ -365,6 +365,9 @@ textarea { resize: vertical; min-height: 62px; }
   margin-bottom: 8px;
 }
 
+.block-tools { display: flex; gap: 6px; align-items: center; }
+.block-tools button[disabled] { opacity: .35; cursor: default; }
+
 .block-head h3 {
   margin: 0;
   font-size: 12px;

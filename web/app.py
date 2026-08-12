@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 import auth
+import pdfimport
 import photo as photo_lib
 import store
 import textimport
@@ -440,6 +441,30 @@ async def api_import_text(request: Request) -> dict:
     except ValidationError:
         raise HTTPException(422, "That file could not be read as a CV.")
     return {"cv": cv.model_dump(), "warnings": warnings}
+
+
+@app.post("/api/import-pdf")
+async def api_import_pdf(request: Request, file: UploadFile = File(...)) -> dict:
+    """Recover the text of a CV that only exists as a PDF.
+
+    The file is read, never rendered: no page of it is ever drawn, opened in a
+    browser or shown to anybody. What comes back is text for the person to
+    check and correct, because a PDF says where glyphs sit and not what they
+    mean, and no parser gets that right every time.
+    """
+    rate_limit(request)
+    raw = await file.read(pdfimport.MAX_BYTES + 1)
+    try:
+        text = pdfimport.to_text(raw)
+    except pdfimport.PdfError as exc:
+        raise HTTPException(400, str(exc))
+
+    fields, warnings = textimport.parse(text)
+    try:
+        cv = CV.model_validate(fields)
+    except ValidationError:
+        raise HTTPException(422, "That PDF could not be read as a CV.")
+    return {"text": text, "cv": cv.model_dump(), "warnings": warnings}
 
 
 @app.post("/api/preview")

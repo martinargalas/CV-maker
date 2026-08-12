@@ -155,6 +155,20 @@ function removeButton(list, index, caption = "Remove") {
     data-list="${list}" data-index="${index}">${esc(caption)}</button>`;
 }
 
+/* A CV is read in order, and the order people want is rarely the order they
+   typed things in. Arrows rather than dragging: they work on a phone, with a
+   keyboard, and with a screen reader. */
+function moveButtons(list, index) {
+  const last = (getPath(list) || []).length - 1;
+  return `
+    <button type="button" class="tiny" data-action="move" data-list="${list}"
+      data-index="${index}" data-to="${index - 1}" title="Move up"
+      aria-label="Move up"${index === 0 ? " disabled" : ""}>↑</button>
+    <button type="button" class="tiny" data-action="move" data-list="${list}"
+      data-index="${index}" data-to="${index + 1}" title="Move down"
+      aria-label="Move down"${index === last ? " disabled" : ""}>↓</button>`;
+}
+
 /* simple list of strings — skills, languages, bullets */
 function textList(list, placeholder) {
   return (getPath(list) || []).map((_, i) => `
@@ -183,7 +197,10 @@ function groupBlock(jobIndex, groupIndex) {
     <div class="block group-block">
       <div class="block-head">
         <h3>Group ${groupIndex + 1}</h3>
-        ${removeButton(`jobs.${jobIndex}.groups`, groupIndex)}
+        <span class="block-tools">
+          ${moveButtons(`jobs.${jobIndex}.groups`, groupIndex)}
+          ${removeButton(`jobs.${jobIndex}.groups`, groupIndex)}
+        </span>
       </div>
       ${text(`${base}.label`, "Group label (optional)", "e.g. Delivery")}
       <label><span>Bullets — wrap text in **stars** to bold it</span></label>
@@ -198,7 +215,10 @@ function jobBlock(index) {
     <div class="block">
       <div class="block-head">
         <h3>Job ${index + 1}</h3>
-        ${removeButton("jobs", index)}
+        <span class="block-tools">
+          ${moveButtons("jobs", index)}
+          ${removeButton("jobs", index)}
+        </span>
       </div>
       <div class="row">
         ${text(`jobs.${index}.title`, "Job title")}
@@ -326,6 +346,8 @@ function fitPreview() {
   shell.style.height = `${height * scale}px`;
 }
 
+let previewFailed = false;
+
 async function refreshPreview() {
   statusEl.textContent = "updating…";
   try {
@@ -333,9 +355,14 @@ async function refreshPreview() {
     const { html } = await response.json();
     frame.srcdoc = html;
     frame.onload = () => { fitPreview(); statusEl.textContent = ""; };
-    notice("");
+    // Only clear a message this function put there. An import or a save says
+    // something worth reading, and the preview refresh that follows it must
+    // not wipe it half a second later.
+    if (previewFailed) notice("");
+    previewFailed = false;
   } catch (error) {
     statusEl.textContent = "";
+    previewFailed = true;
     notice(`Preview failed — ${error.message}`);
   }
 }
@@ -363,6 +390,23 @@ form.addEventListener("click", (event) => {
   if (action === "add") {
     getPath(list).push(NEW[kind]());
     changed({ redraw: true });
+  } else if (action === "move") {
+    const items = getPath(list);
+    const from = Number(index);
+    const to = Number(button.dataset.to);
+    if (to < 0 || to >= items.length) return;
+    [items[from], items[to]] = [items[to], items[from]];
+    changed({ redraw: true });
+    // The block moved, so the button under the pointer belongs to a different
+    // entry now. Follow the one that travelled: the same arrow if it can still
+    // be used, otherwise the opposite one, so the keyboard never lands nowhere.
+    const arrow = (towards) => form.querySelector(
+      `button[data-action="move"][data-list="${list}"][data-index="${to}"][data-to="${towards}"]`
+    );
+    const same = arrow(to + (to - from));
+    const other = arrow(to - (to - from));
+    if (same && !same.disabled) same.focus();
+    else if (other && !other.disabled) other.focus();
   } else if (action === "remove") {
     getPath(list).splice(Number(index), 1);
     changed({ redraw: true });
@@ -453,12 +497,42 @@ $("#txt-input").addEventListener("change", (event) => {
   reader.readAsText(file);
 });
 
+$("#pdf-input").addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+
+  const box = $("#text-import-input");
+  notice("Reading the PDF…");
+  const body = new FormData();
+  body.append("file", file);
+  try {
+    const response = await fetch("/api/import-pdf", { method: "POST", body });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `${response.status}`);
+
+    // The text goes in the box rather than straight into the form. Recovering
+    // a CV from a PDF gets things wrong, and this is the moment where that is
+    // cheap to fix — before it becomes a hundred form fields.
+    box.value = data.text;
+    box.focus();
+    box.setSelectionRange(0, 0);
+    notice([
+      "Read the PDF. Check the text, fix anything it got wrong, then press “Read it”.",
+      ...data.warnings,
+    ].join(" "));
+  } catch (error) {
+    notice(`Could not read that PDF — ${error.message}`);
+  }
+});
+
 $("#text-import").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
   const { action } = button.dataset;
   if (action === "text-import-run") readText($("#text-import-input").value);
   else if (action === "text-import-file") $("#txt-input").click();
+  else if (action === "pdf-import-file") $("#pdf-input").click();
   else if (action === "text-import-cancel") $("#text-import").hidden = true;
 });
 

@@ -160,9 +160,10 @@ that it starts in seconds. Stop it with Ctrl-C.
 - **Download PDF** gives you the same single-page file `./render.sh` produces.
 - **Save** keeps the CV in your account, so it is waiting on the front page next
   time. Needs an account; everything else here does not.
-- **Import text** reads the plain-text format from `content-example.txt` — paste
-  it or pick the file, and it fills in the form. Useful if you already wrote your
-  CV that way, or came from the CLI route.
+- **Import text or PDF** fills in the form from a CV you already have. Paste the
+  plain-text format from `content-example.txt`, pick a `.txt` file, or hand it
+  the PDF of your current CV.
+- **Reorder** jobs and groups of bullets with the ↑ and ↓ buttons on each block.
 - **Export JSON** saves your answers to your own computer; **Import JSON** reads
   them back. Worth doing even with an account: it is a copy that does not depend
   on this server still being there.
@@ -170,10 +171,22 @@ that it starts in seconds. Stop it with Ctrl-C.
 To emphasise part of a bullet, wrap it in stars: `**like this**`. You never
 have to type HTML.
 
-Importing text is a best guess, not a conversion — the format does not mark
+Importing is a best guess, not a conversion. The text format does not mark
 which paragraph is a job's intro and which lines are bullets, so check each job
-afterwards. Anything the parser did not recognise is listed rather than dropped
-silently.
+afterwards; anything not recognised is listed rather than dropped silently.
+
+**Importing a PDF is recovery, and it shows.** A PDF records where each letter
+sits on the page, not what the words mean, so the app has to work out the
+columns, put letter-spaced headings back together and rejoin addresses the page
+broke in half. It gets the common shapes right and it will get some things
+wrong, which is why the recovered text lands in a box for you to correct before
+it becomes a CV rather than going straight into the fields.
+
+Two limits worth knowing. A **scanned** PDF — a photograph or scan rather than
+text — cannot be read at all, and the app says so instead of producing nonsense;
+there is no OCR here. And a CV laid out in some way this has not met may come
+back out of order, in which case fixing the text in the box is quicker than
+fixing forty form fields afterwards.
 
 ### Accounts
 

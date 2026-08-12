@@ -44,9 +44,10 @@ _URL = re.compile(r"https?://\S+")
 # Heading text -> which part of the CV it fills. Matched as substrings against
 # a lower-cased, accent-stripped heading, so "Vzdělání" and "vzdelani" both hit.
 _SECTIONS: List[Tuple[str, Tuple[str, ...]]] = [
-    ("contact", ("personal information", "personal details", "osobni udaje", "kontakt")),
-    ("about", ("professional summary", "summary", "profile", "profesionalni shrnuti",
-               "shrnuti", "o mne", "profil")),
+    ("contact", ("personal information", "personal details", "contact", "osobni udaje",
+                 "kontakt")),
+    ("about", ("professional summary", "summary", "profile", "about me", "about",
+               "profesionalni shrnuti", "shrnuti", "o mne", "profil")),
     ("education", ("education", "vzdelani")),
     ("skills", ("skills", "dovednosti", "znalosti")),
     ("links", ("websites", "social links", "links", "webove stranky", "odkazy")),
@@ -97,6 +98,16 @@ def _split_sections(text: str) -> Tuple[List[str], List[Tuple[str, List[str]]]]:
             lines = lines[:index]
             break
 
+    # A file written to the documented format underlines its headings, and
+    # those rules are then the only thing trusted — a job called "Education
+    # Lead" must not become the education section. Only when a document has no
+    # rules at all, which is what recovered text looks like, are headings
+    # recognised by their wording.
+    ruled = any(
+        _UNDERLINE.match(later) and lines[index].strip()
+        for index, later in enumerate(lines[1:])
+    )
+
     preamble: List[str] = []
     sections: List[Tuple[str, List[str]]] = []
     heading: Optional[str] = None
@@ -105,18 +116,19 @@ def _split_sections(text: str) -> Tuple[List[str], List[Tuple[str, List[str]]]]:
     index = 0
     while index < len(lines):
         line = lines[index]
-        is_heading = (
+        underlined = (
             line
             and index + 1 < len(lines)
             and _UNDERLINE.match(lines[index + 1])
         )
+        is_heading = bool(underlined) or (not ruled and is_section_heading(line))
         if is_heading:
             if heading is None:
                 preamble = body
             else:
                 sections.append((heading, body))
             heading, body = line, []
-            index += 2
+            index += 2 if underlined else 1
             continue
         body.append(line)
         index += 1
@@ -136,6 +148,36 @@ def _section_key(heading: str) -> Optional[str]:
     return None
 
 
+# A heading with no rule under it has to be recognised by what it says, so it
+# must be short, unpunctuated and one of the names we know.
+MAX_BARE_HEADING = 45
+
+
+def is_section_heading(line: str) -> bool:
+    """Whether a line reads as a section heading on its own.
+
+    Used for text that never had the `=` rules — a CV recovered from a PDF,
+    say. It is deliberately strict: a long line, or one that ends a sentence,
+    is prose no matter which words it contains.
+
+    The name also has to account for most of the line. Without that, "A short
+    line about what you do outside work" is an About heading, because it
+    contains the word about, and it swallows the section it belongs to.
+    """
+    line = line.strip().rstrip(":").strip()
+    if not line or len(line) > MAX_BARE_HEADING:
+        return False
+    if line.endswith((".", ",", ";", "!", "?")):
+        return False
+
+    folded = _fold(line)
+    longest = max(
+        (len(needle) for _, needles in _SECTIONS for needle in needles if needle in folded),
+        default=0,
+    )
+    return bool(folded) and longest / len(folded) >= 0.5
+
+
 # ------------------------------------------------------------- field readers
 
 def _read_contact(lines: List[str], cv: Dict) -> None:
@@ -150,29 +192,83 @@ def _read_contact(lines: List[str], cv: Dict) -> None:
 
 
 def _read_links(lines: List[str]) -> List[Dict]:
-    links = []
-    for line in (l for l in lines if l.strip()):
-        url = _URL.search(line)
-        if not url:
+    """Read "Label: https://..." rows, allowing for what a PDF does to them.
+
+    A page break puts the label on one line and the address on the next, and a
+    narrow column snaps a long address in half. Both are put back together
+    here, since half a URL is a link that goes nowhere.
+    """
+    rows = [l.strip() for l in lines]
+    links: List[Dict] = []
+
+    def previous_label(at: int) -> str:
+        for back in range(at - 1, -1, -1):
+            if rows[back]:
+                return rows[back][:-1].strip() if rows[back].endswith(":") else ""
+        return ""
+
+    index = 0
+    while index < len(rows):
+        line = rows[index]
+        found = _URL.search(line) if line else None
+        if not found:
+            index += 1
             continue
-        label = line[: url.start()].strip().rstrip(":").strip()
-        links.append({"label": label, "url": url.group(0)})
+
+        label = line[: found.start()].strip().rstrip(":").strip() or previous_label(index)
+
+        url = found.group(0)
+        # A continuation is the rest of an address the column was too narrow to
+        # hold: one unbroken run of characters, on the very next line, that is
+        # not the start of anything else. A blank line ends the address — past
+        # that, the next word belongs to something other than this link.
+        while index + 1 < len(rows):
+            nxt = rows[index + 1]
+            if not nxt or " " in nxt or _URL.search(nxt) or nxt.endswith(":"):
+                break
+            if _DATE.match(nxt) or len(nxt) > 60 or is_section_heading(nxt):
+                break
+            url += nxt
+            index += 1
+
+        links.append({"label": label, "url": url})
+        index += 1
     return links
 
 
 def _read_list(lines: List[str]) -> List[str]:
-    return [_debullet(l) for l in lines if l.strip()]
+    """One item per line, except where a narrow column wrapped one in two.
+
+    A continuation starts mid-sentence, so it opens with a lower-case letter
+    and carries no marker of its own. Anything else starts a new item.
+    """
+    items: List[str] = []
+    for line in (l for l in lines if l.strip()):
+        continues = (
+            items
+            and not _BULLET.match(line)
+            and line[:1].islower()
+        )
+        if continues:
+            items[-1] = f"{items[-1]} {line.strip()}"
+        else:
+            items.append(_debullet(line))
+    return items
 
 
 def _read_entries(lines: List[str]) -> List[Dict]:
     """Education and courses: blocks of title / detail lines / a date."""
-    entries = []
+    entries: List[Dict] = []
     for block in _paragraphs(lines):
         block = [_debullet(l) for l in block]
         meta = ""
         if _DATE.match(block[-1]):
             meta = block.pop().strip()
         if not block:
+            # A block that is only a date belongs to the entry above it. PDFs
+            # put a gap there that the text format does not.
+            if meta and entries and not entries[-1]["meta"]:
+                entries[-1]["meta"] = meta
             continue
         entries.append({
             "title": block[0],

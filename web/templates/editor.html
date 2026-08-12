@@ -16,7 +16,7 @@
     <a class="button ghost" href="/" id="mine-link" hidden>← My CVs</a>
     <button type="button" data-action="load-example" class="ghost">Load example</button>
     <button type="button" data-action="import" class="ghost">Import JSON</button>
-    <button type="button" data-action="import-text" class="ghost">Import text</button>
+    <button type="button" data-action="import-text" class="ghost">Import text or PDF</button>
     <button type="button" data-action="export" class="ghost">Export JSON</button>
     <button type="button" data-action="save" class="ghost" id="save-button" hidden>Save</button>
     <button type="button" data-action="render" class="primary">Download PDF</button>
@@ -37,8 +37,15 @@
   <div class="text-import-actions">
     <button type="button" data-action="text-import-run" class="primary">Read it</button>
     <button type="button" data-action="text-import-file" class="ghost">Choose a .txt file</button>
+    <button type="button" data-action="pdf-import-file" class="ghost">Choose a PDF</button>
     <button type="button" data-action="text-import-cancel" class="ghost">Cancel</button>
   </div>
+  <p class="hint">
+    A PDF only says where the letters sit on the page, not what they mean, so
+    reading one back is recovery rather than conversion. The text lands in the
+    box above for you to fix before it becomes a CV. A scanned PDF — a picture
+    of a CV rather than text — cannot be read at all.
+  </p>
 </section>
 
 <main>
@@ -71,6 +78,7 @@
 <input type="file" id="photo-input" accept="image/*" hidden>
 <input type="file" id="json-input" accept="application/json,.json" hidden>
 <input type="file" id="txt-input" accept="text/plain,.txt,.md" hidden>
+<input type="file" id="pdf-input" accept="application/pdf,.pdf" hidden>
 
 <script src="/static/app.js"></script>
 </body>

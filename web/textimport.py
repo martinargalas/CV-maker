@@ -22,6 +22,7 @@ import unicodedata
 from typing import Dict, List, Optional, Tuple
 
 import cvdoc
+import duration
 
 MAX_TEXT = 200_000
 
@@ -322,14 +323,23 @@ def _read_jobs(lines: List[str]) -> List[Dict]:
     for order, (first, date_line) in enumerate(starts):
         end = starts[order + 1][0] if order + 1 < len(starts) else len(lines)
         header = [l for l in lines[first:date_line] if l.strip()]
+        when = lines[date_line].strip()
         job = {
             "title": header[0] if header else "",
             "company": header[1] if len(header) > 1 else "",
             "city": ", ".join(header[2:]) if len(header) > 2 else "",
-            "when": lines[date_line].strip(),
+            "start": "", "end": "", "ongoing": False,
+            "when": when,
             "intro": "",
             "groups": [],
         }
+        # Give the form its date pickers where the dates can be read, so an
+        # imported CV is edited the same way as one typed in. Anything not
+        # recognised keeps its text and is edited as text.
+        picked = duration.structure(when)
+        if picked:
+            job["start"], job["end"], job["ongoing"] = picked
+            job["when"] = ""
         _read_job_body(lines[date_line + 1:end], job)
         jobs.append(job)
     return jobs

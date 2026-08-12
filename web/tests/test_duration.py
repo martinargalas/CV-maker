@@ -114,6 +114,67 @@ def test_the_dates_are_still_escaped_with_durations_on():
     assert "&lt;b&gt;Jan 2024&lt;/b&gt;" in doc
 
 
+# --------------------------------------------------------- picked dates
+
+def test_picked_dates_become_the_date_line():
+    doc = built(jobs=[{"title": "Job", "start": "2024-01", "end": "2024-12"}])
+    assert '<p class="when">Jan 2024 - Dec 2024</p>' in doc
+
+
+def test_a_job_still_running_says_so():
+    doc = built(jobs=[{"title": "Job", "start": "2024-01", "ongoing": True}])
+    assert '<p class="when">Jan 2024 - Present</p>' in doc
+
+
+def test_picked_dates_are_worded_in_the_chosen_language():
+    doc = built(duration_language="cs",
+                jobs=[{"title": "Job", "start": "2024-01", "ongoing": True}])
+    assert '<p class="when">leden 2024 - současnost</p>' in doc
+
+
+def test_picked_dates_win_over_leftover_text():
+    """Switching to the pickers must not leave the old text showing."""
+    doc = built(jobs=[{"title": "Job", "start": "2024-01", "end": "2024-06",
+                       "when": "something else entirely"}])
+    assert "something else entirely" not in doc
+    assert "Jan 2024 - Jun 2024" in doc
+
+
+def test_typed_dates_are_used_when_there_are_no_picked_ones():
+    doc = built(jobs=[{"title": "Job", "when": "2019 - 2021, on and off"}])
+    assert '<p class="when">2019 - 2021, on and off</p>' in doc
+
+
+def test_durations_work_from_picked_dates_too():
+    doc = built(show_durations=True,
+                jobs=[{"title": "Job", "start": "2024-01", "end": "2024-12"}])
+    assert "Jan 2024 - Dec 2024 (1 year)" in doc
+
+
+@pytest.mark.parametrize("value", ["2024-13", "not-a-date", "24-01", "2024-1"])
+def test_a_picked_date_that_is_not_a_month_is_refused(value):
+    """The pickers send YYYY-MM; anything else did not come from them."""
+    with pytest.raises(Exception):
+        CV.model_validate({"name": "X", "jobs": [{"title": "J", "start": value}]})
+
+
+@pytest.mark.parametrize("when,picked", [
+    ("Jan 2024 - Present", ("2024-01", "", True)),
+    ("Mar 2021 - Dec 2023", ("2021-03", "2023-12", False)),
+    ("03/2021 - 12/2023", ("2021-03", "2023-12", False)),
+    ("leden 2024 - dosud", ("2024-01", "", True)),
+])
+def test_readable_text_is_turned_into_picker_values_on_import(when, picked):
+    assert duration.structure(when) == picked
+
+
+@pytest.mark.parametrize("when", ["2019 - 2021", "sometime last year", "Various"])
+def test_dates_without_a_month_stay_free_text(when):
+    """A month picker cannot hold "2019", and rounding it to January would put
+    a claim in the CV that nobody made."""
+    assert duration.structure(when) is None
+
+
 # ---------------------------------------------------------------- title
 
 def test_the_document_title_is_the_name_and_nothing_else():

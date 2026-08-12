@@ -125,7 +125,10 @@ def test_every_job_is_found_with_its_header_and_groups():
 
     first = cv["jobs"][0]
     assert (first["title"], first["company"], first["city"]) == ("Job Title", "Company", "City")
-    assert first["when"] == "Jan 2024 - Present"
+    # Readable dates arrive as picker values, so an imported CV is edited the
+    # same way as one typed in.
+    assert (first["start"], first["end"], first["ongoing"]) == ("2024-01", "", True)
+    assert first["when"] == ""
     assert first["intro"].startswith("One or two sentences")
     assert [(g["label"], len(g["bullets"])) for g in first["groups"]] == [
         ("Group label", 3), ("Another group label", 2),
@@ -166,7 +169,7 @@ def test_a_job_with_only_a_title_and_a_date_is_still_a_job():
     assert [j["title"] for j in jobs] == ["Engineering Manager", "Profesní rozvoj"]
     last = jobs[-1]
     assert (last["company"], last["city"]) == ("", "")
-    assert last["when"] == "Mar 2026 - Present"
+    assert (last["start"], last["ongoing"]) == ("2026-03", True)
     assert last["groups"][0]["bullets"] == ["Open-source projekt"]
 
 

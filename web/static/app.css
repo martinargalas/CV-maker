@@ -384,6 +384,35 @@ textarea { resize: vertical; min-height: 62px; }
 
 .hint { margin: -4px 0 10px; font-size: 12px; color: var(--muted); }
 
+.warn { margin: -4px 0 8px; font-size: 12px; color: var(--danger); }
+
+.dates { margin-bottom: 10px; }
+.dates .check { margin-bottom: 8px; }
+
+input[type="month"] {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+
+input[type="month"]:disabled { background: #f4f4f5; color: var(--muted); }
+
+.inline-select { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.inline-select > span { margin: 0; }
+.inline-select select {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+
 .photo-row { display: flex; align-items: center; gap: 12px; }
 .photo-row img {
   width: 54px;

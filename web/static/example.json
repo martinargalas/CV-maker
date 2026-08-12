@@ -46,7 +46,7 @@
       "title": "Job Title",
       "company": "Company",
       "city": "City",
-      "when": "Jan 2024 - Present",
+      "when": "",
       "intro": "One or two sentences on the situation you walked into and what you were there to do. Optional — drop the paragraph if the bullets speak for themselves.",
       "groups": [
         {
@@ -62,13 +62,16 @@
             "Group labels are optional — a job can be a flat list of bullets."
           ]
         }
-      ]
+      ],
+      "start": "2024-01",
+      "end": "",
+      "ongoing": true
     },
     {
       "title": "Earlier Job Title",
       "company": "Company",
       "city": "City",
-      "when": "Mar 2021 - Dec 2023",
+      "when": "",
       "intro": "",
       "groups": [
         {
@@ -78,18 +81,11 @@
             "Two or three lines is plenty once a job is more than five years old."
           ]
         }
-      ]
+      ],
+      "start": "2021-03",
+      "end": "2023-12",
+      "ongoing": false
     }
   ],
-  "labels": {
-    "contact": "Contact",
-    "about": "About Me",
-    "education": "Education",
-    "skills": "Skills",
-    "links": "Links",
-    "languages": "Languages",
-    "interests": "Interests",
-    "courses": "Courses",
-    "work": "Work Experience"
-  }
+  "language": "en"
 }

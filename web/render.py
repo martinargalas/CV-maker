@@ -92,6 +92,12 @@ def _argv(chrome: str, workdir: Path, source: Path, output: Path) -> List[str]:
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-dev-shm-usage",
+        # HOME points at the request's temporary directory, so Chrome finds no
+        # keychain there and asks for one — a dialog nobody is sitting in front
+        # of. These two tell it to keep passwords in memory and forget them,
+        # which is what a browser that renders one page and exits should do.
+        "--use-mock-keychain",
+        "--password-store=basic",
     ]
     if NO_SANDBOX:
         args.append("--no-sandbox")

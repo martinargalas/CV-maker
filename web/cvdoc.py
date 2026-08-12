@@ -22,7 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import duration
 from typing_extensions import Annotated
@@ -70,29 +70,65 @@ class Group(BaseModel):
     bullets: List[Para] = Field(default_factory=list, max_length=MAX_BULLETS)
 
 
+# A year, or a year and a real month. The month range is part of the pattern:
+# "2024-13" matches the shape a picker sends without being a date.
+MONTH = Annotated[
+    str,
+    StringConstraints(pattern=r"^$|^\d{4}(-(0[1-9]|1[0-2]))?$", strip_whitespace=True),
+]
+
+
 class Job(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: Line = ""
     company: Line = ""
     city: Line = ""
+
+    # Dates come in two shapes on purpose. `start`/`end` are what the pickers
+    # produce and are the reliable ones: a month and a year, or nothing.
+    # `when` is the free text they fall back to — a CV imported from a PDF, a
+    # range like "2019 - 2021", or anything a person wants worded their own
+    # way. Structured wins when it is there.
+    start: MONTH = ""
+    end: MONTH = ""
+    ongoing: bool = False
     when: Short = ""
+
     intro: Para = ""
     groups: List[Group] = Field(default_factory=list, max_length=MAX_GROUPS)
 
 
 class Labels(BaseModel):
-    """Section headings, so a CV can be written in a language other than English."""
+    """Section headings.
+
+    Empty means "whatever this CV's language calls it". Anything else is a
+    wording the person chose and is used exactly as given.
+    """
 
     model_config = ConfigDict(extra="forbid")
-    contact: Short = "Contact"
-    about: Short = "About Me"
-    education: Short = "Education"
-    skills: Short = "Skills"
-    links: Short = "Links"
-    languages: Short = "Languages"
-    interests: Short = "Interests"
-    courses: Short = "Courses"
-    work: Short = "Work Experience"
+    contact: Short = ""
+    about: Short = ""
+    education: Short = ""
+    skills: Short = ""
+    links: Short = ""
+    languages: Short = ""
+    interests: Short = ""
+    courses: Short = ""
+    work: Short = ""
+
+
+DEFAULT_LABELS = {
+    "en": {
+        "contact": "Contact", "about": "About Me", "education": "Education",
+        "skills": "Skills", "links": "Links", "languages": "Languages",
+        "interests": "Interests", "courses": "Courses", "work": "Work Experience",
+    },
+    "cs": {
+        "contact": "Kontakt", "about": "O mně", "education": "Vzdělání",
+        "skills": "Dovednosti", "links": "Odkazy", "languages": "Jazyky",
+        "interests": "Zájmy", "courses": "Kurzy", "work": "Pracovní zkušenosti",
+    },
+}
 
 
 class CV(BaseModel):
@@ -118,14 +154,32 @@ class CV(BaseModel):
 
     jobs: List[Job] = Field(default_factory=list, max_length=MAX_JOBS)
 
+    # One choice for the whole CV: what the section headings are called, how
+    # months are named, and how a length is worded.
+    language: Literal["en", "cs"] = "en"
+
     # Off by default: it is a claim about the dates, and it should be the
     # holder's decision to make it rather than something that appears on its
     # own. Worked out when the CV is drawn, so a job still running keeps
     # counting instead of freezing at whatever it said the day it was saved.
     show_durations: bool = False
-    duration_language: Literal["en", "cs"] = "en"
 
     labels: Labels = Field(default_factory=Labels)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _carry_old_field(cls, data):
+        """Accept CVs saved before the language switch covered everything.
+
+        The field used to be called duration_language and only worded the
+        lengths. Saved CVs and exported files still carry it, and the model
+        refuses unknown fields, so it is moved across rather than rejected.
+        """
+        if isinstance(data, dict) and "duration_language" in data:
+            data = dict(data)
+            data.setdefault("language", data.pop("duration_language"))
+            data.pop("duration_language", None)
+        return data
 
     @field_validator("photo")
     @classmethod
@@ -254,19 +308,59 @@ def _links(items: List[Link]) -> str:
     return "\n".join(out)
 
 
+def _label(cv: CV, key: str) -> str:
+    """What this CV calls a section.
+
+    An empty heading follows the CV's language. So does one that still reads
+    exactly as the English default did — that is a heading nobody edited, and
+    leaving it in English while the rest of the CV turns Czech would be worse
+    than treating it as untouched.
+    """
+    chosen = getattr(cv.labels, key, "")
+    if chosen and chosen != DEFAULT_LABELS["en"][key]:
+        return chosen
+    return DEFAULT_LABELS[cv.language][key]
+
+
 def _side(cv: CV) -> str:
-    lab = cv.labels
     sections = [
-        _section(lab.contact, _contact(cv)),
-        _section(lab.about, f"<p>{_rich(cv.about)}</p>" if cv.about else ""),
-        _section(lab.education, _entries(cv.education)),
-        _section(lab.skills, _bullet_list(cv.skills)),
-        _section(lab.links, _links(cv.links)),
-        _section(lab.languages, _bullet_list(cv.languages)),
-        _section(lab.interests, f"<p>{_rich(cv.interests)}</p>" if cv.interests else ""),
-        _section(lab.courses, _entries(cv.courses)),
+        _section(_label(cv, "contact"), _contact(cv)),
+        _section(_label(cv, "about"), f"<p>{_rich(cv.about)}</p>" if cv.about else ""),
+        _section(_label(cv, "education"), _entries(cv.education)),
+        _section(_label(cv, "skills"), _bullet_list(cv.skills)),
+        _section(_label(cv, "links"), _links(cv.links)),
+        _section(_label(cv, "languages"), _bullet_list(cv.languages)),
+        _section(_label(cv, "interests"), f"<p>{_rich(cv.interests)}</p>" if cv.interests else ""),
+        _section(_label(cv, "courses"), _entries(cv.courses)),
     ]
     return "\n\n".join(s for s in sections if s)
+
+
+def _dates(job: Job, cv: CV) -> tuple:
+    """The date line, and how long it lasted if that is being shown.
+
+    Picked dates are used when they are there, which is what makes every entry
+    read the same way. Otherwise the text the person typed is used exactly as
+    typed — imports and unusual ranges live there, and rewriting them would
+    lose what they say.
+
+    The length is silence-on-doubt: a line that cannot be read gets no
+    parenthesis at all, because a CV showing the wrong tenure is worse than one
+    showing none.
+    """
+    lang = cv.language
+    structured = duration.format_range(job.start, job.end, job.ongoing, lang)
+
+    if structured:
+        when = structured
+        months = duration.months_for(job.start, job.end, job.ongoing)
+    else:
+        when = job.when
+        months = duration.months_between(job.when) if job.when else None
+
+    if not cv.show_durations or months is None:
+        return when, ""
+    return when, duration.describe(months, lang)
 
 
 def _job(job: Job, cv: CV) -> str:
@@ -274,15 +368,10 @@ def _job(job: Job, cv: CV) -> str:
     title = _join(job.title, job.company, job.city)
     if title:
         out.append(f"<h3>{_text(title)}</h3>")
-    if job.when:
-        when = job.when
-        if cv.show_durations:
-            # Silence rather than a guess: a date line this cannot read gets
-            # left exactly as it was typed. A CV showing the wrong tenure is
-            # worse than one showing none.
-            length = duration.for_line(job.when, cv.duration_language)
-            if length:
-                when = f"{job.when} ({length})"
+    when, length = _dates(job, cv)
+    if when:
+        if length:
+            when = f"{when} ({length})"
         out.append(f'<p class="when">{_text(when)}</p>')
     if job.intro:
         out.append(f'<p class="intro">{_rich(job.intro)}</p>')
@@ -304,7 +393,7 @@ def _job(job: Job, cv: CV) -> str:
 
 def _main(cv: CV) -> str:
     jobs = "\n\n".join(j for j in (_job(job, cv) for job in cv.jobs) if j)
-    return _section(cv.labels.work, jobs)
+    return _section(_label(cv, "work"), jobs)
 
 
 # ---------------------------------------------------------------- assembly

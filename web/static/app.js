@@ -11,11 +11,25 @@ const MAX = {
   education: 15, courses: 15, links: 10, languages: 15,
 };
 
-const LABEL_FIELDS = [
-  ["contact", "Contact"], ["about", "About Me"], ["education", "Education"],
-  ["skills", "Skills"], ["links", "Links"], ["languages", "Languages"],
-  ["interests", "Interests"], ["courses", "Courses"], ["work", "Work Experience"],
+const LABEL_KEYS = [
+  "contact", "about", "education", "skills", "links",
+  "languages", "interests", "courses", "work",
 ];
+
+/* What each section is called when nobody has said otherwise. These are shown
+   as placeholders, so the field can stay empty and follow the CV's language. */
+const DEFAULT_LABELS = {
+  en: {
+    contact: "Contact", about: "About Me", education: "Education",
+    skills: "Skills", links: "Links", languages: "Languages",
+    interests: "Interests", courses: "Courses", work: "Work Experience",
+  },
+  cs: {
+    contact: "Kontakt", about: "O mně", education: "Vzdělání",
+    skills: "Dovednosti", links: "Odkazy", languages: "Jazyky",
+    interests: "Zájmy", courses: "Kurzy", work: "Pracovní zkušenosti",
+  },
+};
 
 const blank = () => ({
   name: "", role: "", uppercase_name: true,
@@ -24,12 +38,16 @@ const blank = () => ({
   education: [], skills: [], links: [], languages: [],
   interests: "", courses: [],
   jobs: [],
-  show_durations: false, duration_language: "en",
-  labels: Object.fromEntries(LABEL_FIELDS),
+  language: "en", show_durations: false,
+  labels: Object.fromEntries(LABEL_KEYS.map((key) => [key, ""])),
 });
 
 const NEW = {
-  job: () => ({ title: "", company: "", city: "", when: "", intro: "", groups: [NEW.group()] }),
+  job: () => ({
+    title: "", company: "", city: "",
+    start: "", end: "", ongoing: false, when: "",
+    intro: "", groups: [NEW.group()],
+  }),
   group: () => ({ label: "", bullets: [""] }),
   entry: () => ({ title: "", subtitle: "", meta: "" }),
   link: () => ({ label: "", url: "" }),
@@ -61,7 +79,11 @@ function normalize(loaded) {
   out.labels = { ...base.labels, ...(loaded?.labels || {}) };
   out.uppercase_name = Boolean(out.uppercase_name);
   out.show_durations = Boolean(out.show_durations);
-  out.duration_language = out.duration_language === "cs" ? "cs" : "en";
+  // duration_language is what this field was called when it only worded the
+  // lengths; files exported before the switch covered everything still use it.
+  const language = out.language ?? out.duration_language;
+  out.language = language === "cs" ? "cs" : "en";
+  delete out.duration_language;
   // Only the shape /api/photo produces. Anything else is dropped rather than
   // put into an <img src>.
   out.photo = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(out.photo) ? out.photo : "";
@@ -70,6 +92,30 @@ function normalize(loaded) {
 
 let state = blank();
 let previewTimer = null;
+
+/* Month names, only so that switching a job to free text can hand over what
+   the pickers were showing. The server words the CV itself. */
+const MONTHS = {
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  cs: ["leden", "únor", "březen", "duben", "květen", "červen",
+       "červenec", "srpen", "září", "říjen", "listopad", "prosinec"],
+};
+const ONGOING_WORD = { en: "Present", cs: "současnost" };
+
+function monthText(value, language) {
+  const match = /^(\d{4})-(\d{2})$/.exec(value || "");
+  if (!match) return /^\d{4}$/.test(value || "") ? value : "";
+  return `${MONTHS[language][Number(match[2]) - 1]} ${match[1]}`;
+}
+
+function whenText(job) {
+  const language = MONTHS[state.language] ? state.language : "en";
+  const from = monthText(job.start, language);
+  if (!from) return "";
+  if (job.ongoing) return `${from} - ${ONGOING_WORD[language]}`;
+  const to = monthText(job.end, language);
+  return to ? `${from} - ${to}` : from;
+}
 
 const $ = (sel) => document.querySelector(sel);
 const form = $("#form");
@@ -212,6 +258,46 @@ function groupBlock(jobIndex, groupIndex) {
     </div>`;
 }
 
+/* Dates are pickers by default and free text when they have to be.
+
+   Month pickers keep nonsense out and make every entry read the same way, but
+   they cannot hold everything a real CV says — "2019 - 2021" with no months, a
+   range recovered from a PDF, or a note somebody wants worded their own way.
+   So the text field stays, one click away, and whatever is in it is used
+   exactly as written. */
+function dateFields(index) {
+  const job = state.jobs[index];
+  const typed = Boolean(job.when);
+
+  if (typed) {
+    return `
+      <div class="dates">
+        ${text(`jobs.${index}.when`, "Dates", "Jan 2024 - Present")}
+        <button type="button" class="tiny" data-action="dates-pick" data-index="${index}">
+          Use the date pickers instead</button>
+      </div>`;
+  }
+
+  const backwards = job.start && job.end && !job.ongoing && job.end < job.start;
+  return `
+    <div class="dates">
+      <div class="row">
+        <label><span>From</span>
+          <input type="month" data-path="jobs.${index}.start" value="${esc(job.start)}"></label>
+        <label><span>To</span>
+          <input type="month" data-path="jobs.${index}.end" value="${esc(job.end)}"
+                 ${job.ongoing ? "disabled" : ""}></label>
+      </div>
+      <label class="check">
+        <input type="checkbox" data-path="jobs.${index}.ongoing" ${job.ongoing ? "checked" : ""}>
+        Still here
+      </label>
+      ${backwards ? `<p class="warn">That ends before it starts.</p>` : ""}
+      <button type="button" class="tiny" data-action="dates-type" data-index="${index}">
+        Type the dates instead</button>
+    </div>`;
+}
+
 function jobBlock(index) {
   const job = state.jobs[index];
   return `
@@ -229,8 +315,8 @@ function jobBlock(index) {
       </div>
       <div class="row">
         ${text(`jobs.${index}.city`, "City")}
-        ${text(`jobs.${index}.when`, "Dates", "Jan 2024 - Present")}
       </div>
+      ${dateFields(index)}
       ${area(`jobs.${index}.intro`, "Intro (optional)", "One or two sentences.", 2)}
       ${job.groups.map((_, gi) => groupBlock(index, gi)).join("")}
       <p>${addButton(`jobs.${index}.groups`, "group", "group of bullets")}</p>
@@ -251,6 +337,14 @@ function draw() {
         <input type="checkbox" data-path="uppercase_name" ${state.uppercase_name ? "checked" : ""}>
         Show the name in capitals, as in the sample CV
       </label>
+      <label class="inline-select"><span>Language of the CV</span>
+        <select data-path="language">
+          <option value="en"${state.language === "en" ? " selected" : ""}>English</option>
+          <option value="cs"${state.language === "cs" ? " selected" : ""}>Čeština</option>
+        </select>
+      </label>
+      <p class="hint">Sets the section headings, the month names and how a length
+        is worded. Headings you have written yourself are left alone.</p>
       <div class="photo-row">
         ${state.photo ? `<img src="${esc(state.photo)}" alt="">` : ""}
         <button type="button" class="tiny" data-action="photo">
@@ -282,14 +376,9 @@ function draw() {
         Show how long each job lasted, after the dates
       </label>
       ${state.show_durations ? `
-      <label class="inline-select"><span>Worded in</span>
-        <select data-path="duration_language">
-          <option value="en"${state.duration_language === "en" ? " selected" : ""}>English — 1 year 7 months</option>
-          <option value="cs"${state.duration_language === "cs" ? " selected" : ""}>Czech — 1 rok 7 měsíců</option>
-        </select>
-      </label>
-      <p class="hint">Worked out from the dates you type, so a job still running
-        keeps counting. A date line this cannot read is simply left alone.</p>` : ""}
+      <p class="hint">Worked out from the dates you pick, so a job still running
+        keeps counting. Dates typed as free text that cannot be read are left
+        alone.</p>` : ""}
       ${state.jobs.map((_, i) => jobBlock(i)).join("")}
       <p>${addButton("jobs", "job", "job")}</p>
     </fieldset>
@@ -340,9 +429,13 @@ function draw() {
     <fieldset>
       <legend>Section headings</legend>
       <details class="labels">
-        <summary>Rename the headings, or translate them</summary>
+        <summary>Word a heading differently</summary>
+        <p class="hint">Leave one empty and it follows the CV's language.</p>
         <div class="row">
-          ${LABEL_FIELDS.map(([key, fallback]) => text(`labels.${key}`, fallback)).join("")}
+          ${LABEL_KEYS.map((key) => {
+            const fallback = DEFAULT_LABELS[state.language][key];
+            return text(`labels.${key}`, fallback, fallback);
+          }).join("")}
         </div>
       </details>
     </fieldset>`;
@@ -391,15 +484,16 @@ function changed({ redraw = false } = {}) {
 
 /* ------------------------------------------------------------- actions */
 
-// Fields that reveal or hide other fields have to redraw the form; everything
-// else updates state in place, so the caret stays where the person left it.
-const REDRAWS = new Set(["show_durations"]);
+// Fields that reveal, hide or disable other fields have to redraw the form;
+// everything else updates state in place, so the caret stays where it was.
+const redraws = (path) =>
+  path === "show_durations" || path === "language" || path.endsWith(".ongoing");
 
 form.addEventListener("input", (event) => {
   const path = event.target.dataset.path;
   if (!path) return;
   setPath(path, event.target.type === "checkbox" ? event.target.checked : event.target.value);
-  changed({ redraw: REDRAWS.has(path) });
+  changed({ redraw: redraws(path) });
 });
 
 form.addEventListener("click", (event) => {
@@ -429,6 +523,17 @@ form.addEventListener("click", (event) => {
     else if (other && !other.disabled) other.focus();
   } else if (action === "remove") {
     getPath(list).splice(Number(index), 1);
+    changed({ redraw: true });
+  } else if (action === "dates-type") {
+    // Carry the picked dates over as text, so switching does not wipe them.
+    const job = state.jobs[Number(index)];
+    job.when = whenText(job) || "";
+    job.start = job.end = "";
+    job.ongoing = false;
+    changed({ redraw: true });
+  } else if (action === "dates-pick") {
+    const job = state.jobs[Number(index)];
+    job.when = "";
     changed({ redraw: true });
   } else if (action === "photo") {
     $("#photo-input").click();

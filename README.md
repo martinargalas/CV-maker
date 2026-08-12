@@ -155,8 +155,14 @@ that it starts in seconds. Stop it with Ctrl-C.
   courses. Jobs hold groups of bullets; every list has *add* and *remove*.
 - Upload a photo. It is resized and re-encoded as you upload it.
 - Watch the layout update as you type.
-- Rename the section headings, or translate them — the CV does not have to be
-  in English.
+- **Pick the CV's language** — English or Czech. One switch sets the section
+  headings, the month names and how a length is worded. A heading you write
+  yourself is left alone.
+- **Pick the dates** from month-and-year pickers, with a *Still here* box for a
+  job you are in. Every entry then reads the same way, which is most of what
+  makes a CV look written rather than assembled. Dates that do not fit that
+  shape — "2019 - 2021", or a range recovered from a PDF — stay editable as
+  text, one click away.
 - **Download PDF** gives you the same single-page file `./render.sh` produces.
 - **Save** keeps the CV in your account, so it is waiting on the front page next
   time. Needs an account; everything else here does not.
@@ -165,9 +171,9 @@ that it starts in seconds. Stop it with Ctrl-C.
   the PDF of your current CV.
 - **Reorder** jobs and groups of bullets with the ↑ and ↓ buttons on each block.
 - **Show how long each job lasted** — a switch under *Work experience* adds
-  `(1 year 7 months)` after the dates, worded in English or Czech. It is worked
-  out from the dates when the CV is drawn, so a job still running keeps
-  counting, and a date line it cannot read is left exactly as you typed it.
+  `(1 year 7 months)` after the dates. It is worked out when the CV is drawn, so
+  a job still running keeps counting, and dates typed as free text that cannot
+  be read are left exactly as you wrote them.
 - **Export JSON** saves your answers to your own computer; **Import JSON** reads
   them back. Worth doing even with an account: it is a copy that does not depend
   on this server still being there.

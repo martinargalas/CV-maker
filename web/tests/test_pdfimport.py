@@ -135,7 +135,9 @@ def test_the_columns_do_not_get_interleaved(rendered):
     assert [job.title for job in cv.jobs] == [
         "Job Title, Company, City", "Earlier Job Title, Company, City",
     ]
-    assert [job.when for job in cv.jobs] == ["Jan 2024 - Present", "Mar 2021 - Dec 2023"]
+    assert [(job.start, job.end, job.ongoing) for job in cv.jobs] == [
+        ("2024-01", "", True), ("2021-03", "2023-12", False),
+    ]
     assert cv.languages == ["English", "Another language"]
 
 

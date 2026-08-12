@@ -67,6 +67,13 @@ async def limit_body_size(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-Frame-Options"] = "DENY"
+
+    # Without this a browser picks its own freshness lifetime for the script
+    # and stylesheet, and someone who redeploys keeps being served the version
+    # they had before. "no-cache" is revalidate-every-time, not don't-cache:
+    # the files still come from the cache, after a 304 says they are current.
+    if request.url.path.startswith("/static"):
+        response.headers["Cache-Control"] = "no-cache"
     return response
 
 

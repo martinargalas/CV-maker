@@ -98,16 +98,18 @@ def _endpoint(text: str, today: date) -> Optional[Tuple[int, int]]:
     return (year, month)
 
 
-def months_between(when: str, today: Optional[date] = None) -> Optional[int]:
-    """How many months a date line covers, or None if it cannot be read."""
-    today = today or date.today()
-
-    parts = None
+def _halves(when: str) -> Optional[list]:
     for separator in _SEPARATORS:
         halves = [p for p in separator.split(_fold(when).strip()) if p.strip()]
         if len(halves) == 2:
-            parts = halves
-            break
+            return halves
+    return None
+
+
+def months_between(when: str, today: Optional[date] = None) -> Optional[int]:
+    """How many months a date line covers, or None if it cannot be read."""
+    today = today or date.today()
+    parts = _halves(when)
     if parts is None:
         return None
 
@@ -155,3 +157,112 @@ def for_line(when: str, language: str = "en", today: Optional[date] = None) -> O
     """The length of a job as text, or None when the dates were not readable."""
     months = months_between(when, today)
     return describe(months, language) if months is not None else None
+
+
+# ------------------------------------------------------ structured dates
+
+_MONTH_NAMES = {
+    "en": ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+    "cs": ("leden", "únor", "březen", "duben", "květen", "červen",
+           "červenec", "srpen", "září", "říjen", "listopad", "prosinec"),
+}
+
+_ONGOING_WORD = {"en": "Present", "cs": "současnost"}
+
+
+def parse_month(value: str) -> Optional[Tuple[int, int]]:
+    """"2024-03" or "2024" as (year, month). A bare year means January."""
+    match = re.fullmatch(r"(\d{4})(?:-(\d{2}))?", (value or "").strip())
+    if not match:
+        return None
+    year = int(match.group(1))
+    month = int(match.group(2)) if match.group(2) else 1
+    return (year, month) if 1 <= month <= 12 else None
+
+
+def format_month(value: str, language: str = "en") -> str:
+    parsed = parse_month(value)
+    if parsed is None:
+        return ""
+    year, month = parsed
+    names = _MONTH_NAMES.get(language, _MONTH_NAMES["en"])
+    # A bare year stays a bare year: someone who wrote 2019 did not mean
+    # January 2019, they meant they do not remember the month.
+    if not re.fullmatch(r"\d{4}-\d{2}", value.strip()):
+        return str(year)
+    return f"{names[month - 1]} {year}"
+
+
+def format_range(start: str, end: str, ongoing: bool, language: str = "en") -> str:
+    """The date line a pair of pickers stands for."""
+    first = format_month(start, language)
+    if not first:
+        return ""
+    if ongoing:
+        return f"{first} - {_ONGOING_WORD.get(language, 'Present')}"
+    last = format_month(end, language)
+    return f"{first} - {last}" if last else first
+
+
+def structure(when: str) -> Optional[Tuple[str, str, bool]]:
+    """Turn a free-text range into what the date pickers hold, if it can.
+
+    Used on import, so a CV that arrived as text or as a PDF gets the same
+    pickers as one typed in. A half that named no month stays a bare year
+    rather than being rounded to January, because that is what it said.
+    """
+    parts = _halves(when)
+    if parts is None:
+        return None
+
+    def one(text: str) -> Optional[str]:
+        folded = _fold(text).strip().strip(".,;")
+        numeric = re.fullmatch(r"(\d{1,2})[./-](\d{4})", folded)
+        if numeric:
+            return f"{int(numeric.group(2)):04d}-{int(numeric.group(1)):02d}"
+        iso = re.fullmatch(r"(\d{4})[./-](\d{1,2})", folded)
+        if iso:
+            return f"{int(iso.group(1)):04d}-{int(iso.group(2)):02d}"
+
+        years = re.findall(r"\b(19|20)(\d{2})\b", folded)
+        if len(years) != 1:
+            return None
+        year = int(years[0][0] + years[0][1])
+        for word in re.findall(r"[a-z]+", folded):
+            month = _month_from(word)
+            if month:
+                return f"{year:04d}-{month:02d}"
+        # A year with no month cannot go in a month picker, and rounding it to
+        # January would put a claim in the CV that the person did not make.
+        # It stays free text instead.
+        return None
+
+    ongoing = any(
+        word in _ONGOING for word in re.findall(r"[a-z]+", _fold(parts[1]))
+    )
+    start = one(parts[0])
+    if start is None:
+        return None
+    if ongoing:
+        return (start, "", True)
+
+    end = one(parts[1])
+    if end is None:
+        return None
+    return (start, end, False)
+
+
+def months_for(start: str, end: str, ongoing: bool,
+               today: Optional[date] = None) -> Optional[int]:
+    """The length of a structured range, counted the same inclusive way."""
+    today = today or date.today()
+    begin = parse_month(start)
+    if begin is None:
+        return None
+    finish = (today.year, today.month) if ongoing else parse_month(end)
+    if finish is None:
+        return None
+
+    total = (finish[0] - begin[0]) * 12 + (finish[1] - begin[1]) + 1
+    return total if 1 <= total <= 70 * 12 else None
